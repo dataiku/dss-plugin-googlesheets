@@ -2,9 +2,14 @@
 import datetime
 import dataiku
 from dataiku.customrecipe import get_input_names_for_role, get_output_names_for_role, get_recipe_config
-from googlesheets import get_spreadsheet
-from gspread.utils import rowcol_to_a1
+from googlesheets import GoogleSheetsSession
+from safe_logger import SafeLogger
+from googlesheets_common import DSSConstants, extract_credentials
 
+
+logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
+
+logger.info("GoogleSheets custom recipe v{} starting".format(DSSConstants.PLUGIN_VERSION))
 
 # Input
 input_name = get_input_names_for_role('input_role')[0]
@@ -20,14 +25,20 @@ output_dataset.write_schema(input_schema)
 
 # Get configuration
 config = get_recipe_config()
-credentials = config.get("credentials")
+logger.info("config parameters: {}".format(logger.filter_secrets(config)))
+credentials, credentials_type = extract_credentials(config)
 doc_id = config.get("doc_id")
+if not doc_id:
+    raise ValueError("The document id is not provided")
 tab_id = config.get("tab_id")
+if not tab_id:
+    raise ValueError("The sheet name is not provided")
 insert_format = config.get("insert_format")
+session = GoogleSheetsSession(credentials, credentials_type)
 
 
 # Load worksheet
-ws = get_spreadsheet(credentials, doc_id, tab_id)
+worksheet = session.get_spreadsheet(doc_id, tab_id)
 
 
 # Make available a method of later version of gspread (probably 3.4.0)
@@ -52,7 +63,9 @@ def append_rows(self, values, value_input_option='RAW'):
 
     return self.spreadsheet.values_append(self.title, params, body)
 
-ws.append_rows = append_rows.__get__(ws, ws.__class__)
+
+worksheet.append_rows = append_rows.__get__(worksheet, worksheet.__class__)
+
 
 # Handle datetimes serialization
 def serializer(obj):
@@ -62,7 +75,7 @@ def serializer(obj):
 
 
 # Open writer
-writer = output_dataset.get_writer()        
+writer = output_dataset.get_writer()
 
 
 # Iteration row by row
@@ -70,19 +83,17 @@ batch = []
 for row in input_dataset.iter_rows():
 
     # write to spreadsheet by batch
-    batch.append([serializer(v) for k,v in list(row.items())])
+    batch.append([serializer(v) for k, v in list(row.items())])
 
     if len(batch) >= 50:
-        ws.append_rows(batch, insert_format)
+        worksheet.append_rows(batch, insert_format)
         batch = []
-    
+
     # write to output dataset
     writer.write_row_dict(row)
 
 if len(batch) > 0:
-    ws.append_rows(batch, insert_format)
-
+    worksheet.append_rows(batch, insert_format)
 
 # Close writer
 writer.close()
-

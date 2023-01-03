@@ -3,19 +3,26 @@ import json
 from collections import OrderedDict
 from gspread.utils import rowcol_to_a1
 from slugify import slugify
-from googlesheets import get_spreadsheet
+from googlesheets import GoogleSheetsSession
+from safe_logger import SafeLogger
+from googlesheets_common import DSSConstants, extract_credentials
+
+
+logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
+
 
 class MyConnector(Connector):
 
     def __init__(self, config):
         Connector.__init__(self, config)  # pass the parameters to the base class
-        self.credentials = self.config.get("credentials")
+        logger.info("GoogleSheets connector v{} starting with {}".format(DSSConstants.PLUGIN_VERSION, logger.filter_secrets(config)))
+        credentials, credentials_type = extract_credentials(config)
+        self.session = GoogleSheetsSession(credentials, credentials_type)
         self.doc_id = self.config.get("doc_id")
         self.tab_id = self.config.get("tab_id")
         self.result_format = self.config.get("result_format")
         self.write_format = self.config.get("write_format")
         self.list_unique_slugs = []
-
 
     def get_unique_slug(self, string):
         string = slugify(string, max_length=25, separator="_", lowercase=False)
@@ -29,7 +36,6 @@ class MyConnector(Connector):
         self.list_unique_slugs.append(test_string)
         return test_string
 
-
     def get_read_schema(self):
         # The Google Spreadsheets connector does not have a fixed schema, since each
         # sheet has its own (varying) schema.
@@ -37,9 +43,8 @@ class MyConnector(Connector):
         # Better let DSS handle this
         return None
 
-
     def generate_rows(self, dataset_schema=None, dataset_partitioning=None,
-                            partition_id=None, records_limit = -1):
+                      partition_id=None, records_limit=-1):
         """
         The main reading method.
 
@@ -48,63 +53,68 @@ class MyConnector(Connector):
 
         The dataset schema and partitioning are given for information purpose.
         """
-        ws = get_spreadsheet(self.credentials, self.doc_id, self.tab_id)
-        rows = ws.get_all_values()
-        try:
-            columns = rows[0]
-        except IndexError as e:
-            columns = []
-        columns_slug = list(map(self.get_unique_slug, columns))
+        worksheets = self.session.get_spreadsheets(self.doc_id, self.tab_id)
 
-        if self.result_format == 'first-row-header':
+        for worksheet in worksheets:
+            rows = worksheet.get_all_values()
+            try:
+                columns = rows[0]
+            except IndexError as e:
+                columns = []
 
-            for row in rows[1:]:
-                yield OrderedDict(zip(columns_slug, row))
+            if not self.tab_id and self.result_format == 'first-row-header':
+                columns.insert(0, "Sheet name")
 
-        elif self.result_format == 'no-header':
+            self.list_unique_slugs = []
+            columns_slug = list(map(self.get_unique_slug, columns))
 
-            for row in rows:
-                yield OrderedDict(zip(range(1, len(columns) + 1), row))
+            if self.result_format == 'first-row-header':
+                for row in rows[1:]:
+                    if not self.tab_id:
+                        row.insert(0, "{}".format(worksheet.title))
+                    yield OrderedDict(zip(columns_slug, row))
 
-        elif self.result_format == 'json':
+            elif self.result_format == 'no-header':
+                for row in rows:
+                    if not self.tab_id:
+                        row.insert(0, "{}".format(worksheet.title))
+                    yield OrderedDict(zip(range(1, len(columns) + 1), row))
 
-            for row in rows:
-                yield {"json": json.dumps(row)}
+            elif self.result_format == 'json':
+                for row in rows:
+                    if not self.tab_id:
+                        row.insert(0, "{}".format(worksheet.title))
+                    yield {"json": json.dumps(row)}
 
-        else:
+            else:
 
-            raise Exception("Unimplemented")
-
+                raise Exception("Unimplemented")
 
     def get_writer(self, dataset_schema=None, dataset_partitioning=None,
-                         partition_id=None):
+                   partition_id=None):
 
         if self.result_format == 'json':
-
             raise Exception('JSON format not supported in write mode')
 
-        return MyCustomDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id)
+        if not self.tab_id:
+            raise Exception('The name of the target sheet should be set')
 
+        return MyCustomDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id)
 
     def get_records_count(self, partitioning=None, partition_id=None):
         """
         Returns the count of records for the dataset (or a partition).
         """
-        ws = self.get_spreadsheet()
+        # row_count currently rounds up to 1000 records
+        # For this reason, canCountRecords is set to false and this method is currently ignored by DSS
+        worksheet = self.session.get_spreadsheet(self.doc_id, self.tab_id)
 
         if self.result_format == 'first-row-header':
-
-            return ws.row_count - 1
-
+            return worksheet.row_count - 1
         elif self.result_format in ['no-header', 'json']:
-
-            return ws.row_count
-
+            return worksheet.row_count
         else:
-
             return 0
-
-
 
 
 class MyCustomDatasetWriter(CustomDatasetWriter):
@@ -115,42 +125,27 @@ class MyCustomDatasetWriter(CustomDatasetWriter):
         self.dataset_schema = dataset_schema
         self.dataset_partitioning = dataset_partitioning
         self.partition_id = partition_id
-
         self.buffer = []
-
         columns = [col["name"] for col in dataset_schema["columns"]]
-
         if parent.result_format == 'first-row-header':
             self.buffer.append(columns)
 
-
     def write_row(self, row):
-
-        # Example of dataset_schema: {u'userModified': False, u'columns': [{u'timestampNoTzAsDate': False, u'type': u'string', u'name': u'condition', u'maxLength': -1}, {u'timestampNoTzAsDate': False, u'type': u'string', u'name': u'weather', u'maxLength': -1}, {u'timestampNoTzAsDate': False, u'type': u'double', u'name': u'temperature', u'maxLength': -1}, {u'timestampNoTzAsDate': False, u'type': u'bigint', u'name': u'humidity', u'maxLength': -1}, {u'timestampNoTzAsDate': False, u'type': u'date', u'name': u'date_update', u'maxLength': -1}, {u'timestampNoTzAsDate': False, u'type': u'date', u'name': u'date_add', u'maxLength': -1}, {u'timestampNoTzAsDate': False, u'type': u'string', u'name': u'ville', u'maxLength': -1}, {u'timestampNoTzAsDate': False, u'type': u'string', u'name': u'source', u'maxLength': -1}]}
-        # for (col, val) in zip(self.dataset_schema["columns"], row):
-        #     print (col, val)
-
         self.buffer.append(row)
 
-        # if len(self.buffer) > 50:
-        #     self.flush()
-
-
     def flush(self):
-        ws = get_spreadsheet(self.parent.credentials, self.parent.doc_id, self.parent.tab_id)
+        worksheet = self.parent.session.get_spreadsheet(self.parent.doc_id, self.parent.tab_id)
 
         num_columns = len(self.buffer[0])
         num_lines = len(self.buffer)
 
-        ws.resize(rows=num_lines, cols=num_columns)
+        worksheet.resize(rows=num_lines, cols=num_columns)
 
         range = 'A1:%s' % rowcol_to_a1(num_lines, num_columns)
-        ws.update(range, self.buffer, value_input_option=self.parent.write_format)
+        worksheet.update(range, self.buffer, value_input_option=self.parent.write_format)
 
         self.buffer = []
 
     def close(self):
         self.flush()
         pass
-        
-

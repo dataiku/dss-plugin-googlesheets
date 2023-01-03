@@ -1,0 +1,25 @@
+{
+    "meta" : {
+        "label": "Google Single Sign On",
+        "description": "",
+        "icon": "icon-file-text"
+    },
+    "defaultDefinableInline": false,
+    "defaultDefinableAtProjectLevel": false,
+    "pluginParams": [
+    ],
+
+    "params": [
+        {
+            "name": "access_token",
+            "type": "CREDENTIAL_REQUEST",
+            "credentialRequestSettings": {
+                "type": "OAUTH2",
+                "oauth2Flow": "authorization_code",
+                "authorizationEndpoint": "https://accounts.google.com/o/oauth2/v2/auth?access_type=offline&prompt=consent",
+                "tokenEndpoint": "https://oauth2.googleapis.com/token",
+                "scope": "https://www.googleapis.com/auth/spreadsheets"
+            }
+        }
+    ]
+}

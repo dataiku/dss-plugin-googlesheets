@@ -1,0 +1,18 @@
+{
+    "meta" : {
+        "label": "Service Account",
+        "description": "",
+        "icon": "icon-file-text"
+    },
+    "defaultDefinableInline": true,
+    "defaultDefinableAtProjectLevel": true,
+    "pluginParams": [
+    ],
+    "params": [
+        {
+            "name": "credentials",
+            "description": "Copy/paste the JSON private key provided by Google.",
+            "type": "PASSWORD"
+        }
+    ]
+}
