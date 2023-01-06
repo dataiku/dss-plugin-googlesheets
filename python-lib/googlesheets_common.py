@@ -1,16 +1,18 @@
 class DSSConstants(object):
     EMPTY_CREDENTIALS_ERROR_MESSAGES = {
-        None: "Please select a type of authentication",
+        "default": "Please select a type of authentication",
         "legacy-service-account": "Your Service Account credentials section is empty",
         "preset-service-account": "The selected service account preset is empty",
         "single-sign-on": "There is a problem with the selected Single Sign On preset"
     }
+    DEFAULT_DATASET_FORMAT = {'separator': '\t', 'style': 'unix', 'compress': ''}
     PLUGIN_VERSION = '1.2.0'
 
 
-def extract_credentials(config):
+def extract_credentials(config, can_raise=True):
     credential_type = None
     credentials = None
+    error_message = None
     auth_type = config.get("auth_type", None)
     if auth_type in [None, "legacy-service-account", "preset-service-account"]:
         credential_type = "service-account"
@@ -22,15 +24,35 @@ def extract_credentials(config):
     elif auth_type == "preset-service-account":
         preset_credentials_service_account = config.get("preset_credentials_service_account", {})
         if not preset_credentials_service_account:
-            raise ValueError("There is no service account preset selected.")
+            error_message = "There is no service account preset selected."
+            if can_raise:
+                raise ValueError(error_message)
         credentials = preset_credentials_service_account.get("credentials", None)
     elif auth_type == "single-sign-on":
         oauth_credentials = config.get("oauth_credentials", {})
         if not oauth_credentials:
-            raise ValueError("There is no Single Sign On preset selected.")
+            error_message = "There is no Single Sign On preset selected."
+            if can_raise:
+                raise ValueError(error_message)
         credentials = oauth_credentials.get("access_token", None)
 
     if not credentials:
-        error_message = DSSConstants.EMPTY_CREDENTIALS_ERROR_MESSAGES.get(auth_type, "")
-        raise ValueError("{}".format(error_message))
-    return credentials, credential_type
+        error_message = DSSConstants.EMPTY_CREDENTIALS_ERROR_MESSAGES.get(auth_type, "Please select a type of authentication")
+        if can_raise:
+            raise ValueError("{}".format(error_message))
+    if can_raise:
+        return credentials, credential_type
+    else:
+        return credentials, credential_type, error_message
+
+
+def get_tab_ids(config):
+    # New preset overides old preset
+    # If new preset is empty, new preset = [old preset]
+    legacy_tab_id = config.get("tab_id", None)
+    tabs_ids = config.get("tabs_ids")
+    tabs_ids = tabs_ids or []
+    if not tabs_ids:
+        if legacy_tab_id:
+            return [legacy_tab_id]
+    return tabs_ids

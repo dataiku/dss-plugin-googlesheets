@@ -5,6 +5,7 @@
     },
 
     "kind": "PYTHON",
+    "paramsPythonSetup": "browse_sheets.py",
 
     "inputRoles": [
         {
@@ -76,9 +77,16 @@
         },
         {
             "name": "tab_id",
-            "label": "Sheet name",
+            "label": "Sheet name (legacy)",
+            "description": "Please use the selector below",
             "type": "STRING",
-            "mandatory" : true
+            "visibilityCondition": "model.tabs_ids==null && model.tab_id!=null"
+        },
+        {
+            "name": "tabs_ids",
+            "label": "Sheet name",
+            "type": "SELECT",
+            "getChoicesFromPython": true
         },
         {
             "name": "insert_format",

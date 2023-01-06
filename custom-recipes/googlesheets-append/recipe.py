@@ -4,7 +4,7 @@ import dataiku
 from dataiku.customrecipe import get_input_names_for_role, get_output_names_for_role, get_recipe_config
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
-from googlesheets_common import DSSConstants, extract_credentials
+from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids
 
 
 logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
@@ -30,9 +30,10 @@ credentials, credentials_type = extract_credentials(config)
 doc_id = config.get("doc_id")
 if not doc_id:
     raise ValueError("The document id is not provided")
-tab_id = config.get("tab_id")
-if not tab_id:
+tabs_ids = get_tab_ids(config)
+if not tabs_ids:
     raise ValueError("The sheet name is not provided")
+tab_id = tabs_ids[0]
 insert_format = config.get("insert_format")
 session = GoogleSheetsSession(credentials, credentials_type)
 
