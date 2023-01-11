@@ -58,6 +58,8 @@ class GoogleSheetsSession():
 
     def get_spreadsheets(self, document_id, tab_id=None):
         try:
+            # worksheet and worksheets both make a single fetch_sheet_metadata request
+            # so better use one worksheets than multiple worksheet
             if tab_id:
                 return [self.client.open_by_key(document_id).worksheet(tab_id)]
             else:
@@ -79,3 +81,6 @@ class GoogleSheetsSession():
                 if error_status == 'NOT_FOUND':
                     raise Exception("Trying to open non-existent spreadsheet document. Verify the document id exists (%s)." % document_id)
             raise Exception("The Google API returned an error: %s" % error)
+
+    def get_spreadsheet_title(self, document_id):
+        return self.client.open_by_key(document_id).title

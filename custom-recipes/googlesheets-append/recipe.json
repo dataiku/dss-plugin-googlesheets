@@ -6,6 +6,7 @@
 
     "kind": "PYTHON",
     "paramsPythonSetup": "browse_sheets.py",
+    "selectableFromDataset": "input_role",
 
     "inputRoles": [
         {

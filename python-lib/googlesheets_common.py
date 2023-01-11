@@ -56,3 +56,19 @@ def get_tab_ids(config):
         if legacy_tab_id:
             return [legacy_tab_id]
     return tabs_ids
+
+
+def get_unique_slugs(list_of_names):
+    from slugify import slugify
+    list_unique_slugs = []
+    for name in list_of_names:
+        slug_name = slugify(name, separator="_", lowercase=False)
+        if slug_name == '':
+            slug_name = 'none'
+        test_string = slug_name
+        i = 0
+        while test_string in list_unique_slugs:
+            i += 1
+            test_string = slug_name + '_' + str(i)
+        list_unique_slugs.append(test_string)
+    return list_unique_slugs

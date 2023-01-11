@@ -4,7 +4,8 @@
 
 - Add a preset for storing access tokens
 - Add Google Single Sign On capability
-- Retrieval of all available sheets
+- Add multiple sheets selector
+- Add macro for sheets import as datasets into project
 
 ## [Version 1.1.1](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.1.1) - Bugfix release - July 30, 2020
 

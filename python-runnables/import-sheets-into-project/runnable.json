@@ -1,0 +1,140 @@
+{
+    "meta": {
+        "label": "Import GoogleSheets",
+        "description": "Import selected sheets of a GoogleSheets document as datasets in the current project",
+        "icon": "icon-file-text"
+    },
+    "impersonate": false,
+    
+    "kind": "PYTHON",
+    "paramsPythonSetup": "browse_sheets.py",
+
+    "params": [
+        {
+            "name": "auth_type",
+            "label": "Type of authentication",
+            "type": "SELECT",
+            "selectChoices": [
+                {
+                    "value": "single-sign-on",
+                    "label": "Single Sign On"
+                },
+                {
+                    "value": "preset-service-account",
+                    "label": "Service account preset"
+                }
+            ],
+            "defaultValue": "single-sign-on"
+        },
+        {
+            "name": "preset_credentials_service_account",
+            "label": "Service account preset",
+            "type": "PRESET",
+            "parameterSetId": "service-account",
+            "visibilityCondition": "model.auth_type == 'preset-service-account'"
+        },
+        {
+            "name": "oauth_credentials",
+            "label": "Single Sign On",
+            "type": "PRESET",
+            "parameterSetId": "single-sign-on",
+            "visibilityCondition": "model.auth_type == 'single-sign-on'"
+        },
+        {
+            "name": "doc_id",
+            "label": "Document id",
+            "description": "Can be extracted from the spreadsheet's URL",
+            "type": "STRING",
+            "mandatory" : true
+        },
+        {
+            "name": "tab_id",
+            "label": "Sheet name",
+            "type": "STRING",
+            "visibilityCondition": "model.tab_id!=null"
+        },
+        {
+            "name": "tabs_ids",
+            "label": "Sheets to import",
+            "type": "MULTISELECT",
+            "getChoicesFromPython": true
+        },
+        {
+            "name": "Warning",
+            "type": "SEPARATOR",
+            "label": " ",
+            "description": "⚠️ All sheets will be imported if 'Sheets to import' selector is left blank",
+            "visibilityCondition": "model.doc_id!= null && model.tabs_ids.length==0"
+        },
+        {
+            "name": "creation_mode",
+            "label": "Dataset creation mode",
+            "type": "SELECT",
+            "selectChoices": [
+                {
+                    "value": "create-new",
+                    "label": "Create new datasets if already exist"
+                },
+                {
+                    "value": "overwrite",
+                    "label": "Overwrite the existing datasets"
+                },
+                {
+                    "value": "skip",
+                    "label": "Skip the existing datasets"
+                }
+            ],
+            "defaultValue": "create-new"
+        },
+        {
+            "name": "result_format",
+            "label": "Format",
+            "type": "SELECT",
+            "selectChoices": [
+                {
+                    "value": "first-row-header",
+                    "label": "First row contains column headers"
+                },
+                {
+                    "value": "no-header",
+                    "label": "First row contains data (not recommended)"
+                },
+                {
+                    "value": "json",
+                    "label": "JSON (read mode only)"
+                }
+            ],
+            "mandatory": true,
+            "defaultValue": "first-row-header"
+        },
+        {
+            "name": "write_format",
+            "label": "Values interpretation (write mode)",
+            "description": "In write mode, how data is interpretated by the spreadsheet",
+            "type": "SELECT",
+            "selectChoices": [
+                {
+                    "value": "RAW",
+                    "label": "RAW: not parsed, stored as-is (default)"
+                },
+                {
+                    "value": "USER_ENTERED",
+                    "label": "USER_ENTERED: as if the user typed them into the UI"
+                }
+            ],
+            "mandatory": true,
+            "defaultValue": "RAW"
+        },
+        {
+            "name": "is_dry_run",
+            "label": "Dry run",
+            "description": "Only display the actions that would be taken",
+            "type": "BOOLEAN",
+            "defaultValue": true
+        }
+    ],
+    "permissions": [],
+    "resultType": "RESULT_TABLE",
+    "macroRoles": [
+    ]
+}
