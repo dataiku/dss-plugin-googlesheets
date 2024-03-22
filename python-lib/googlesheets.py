@@ -80,6 +80,8 @@ class GoogleSheetsSession():
                     raise Exception("Access was denied with the following error: %s. Have you enabled the Sheets API? Have you shared the spreadsheet with %s?" % (error_message, self.email))
                 if error_status == 'NOT_FOUND':
                     raise Exception("Trying to open non-existent spreadsheet document. Verify the document id exists (%s)." % document_id)
+                if error_status == 'FAILED_PRECONDITION':
+                    raise Exception("This document is not a Google Sheet. Please use the Google Drive plugin instead.")
             raise Exception("The Google API returned an error: %s" % error)
 
     def get_spreadsheet_title(self, document_id):
@@ -101,4 +103,6 @@ class GoogleSheetsSession():
                     raise Exception("Access was denied with the following error: %s. Have you enabled the Sheets API? Have you shared the spreadsheet with %s?" % (error_message, self.email))
                 if error_status == 'NOT_FOUND':
                     raise Exception("Trying to open non-existent spreadsheet document. Verify the document id exists (%s)." % document_id)
+                if error_status == 'FAILED_PRECONDITION':
+                    raise Exception("This document is not a Google Sheet. Please use the Google Drive plugin instead.")
             raise Exception("The Google API returned an error: %s" % error)
