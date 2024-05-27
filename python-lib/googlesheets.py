@@ -53,10 +53,10 @@ class GoogleSheetsSession():
             )
             self.email = "(email missing)"
 
-    def get_spreadsheet(self, document_id, tab_id):
-        return self.get_spreadsheets(document_id, tab_id)[0]
+    def get_spreadsheet(self, document_id, tab_id, create_if_does_not_exist=None):
+        return self.get_spreadsheets(document_id, tab_id, create_if_does_not_exist=create_if_does_not_exist)[0]
 
-    def get_spreadsheets(self, document_id, tab_id=None):
+    def get_spreadsheets(self, document_id, tab_id=None, create_if_does_not_exist=None):
         try:
             # worksheet and worksheets both make a single fetch_sheet_metadata request
             # so better use one worksheets than multiple worksheet
@@ -69,7 +69,10 @@ class GoogleSheetsSession():
             raise Exception("Trying to open non-existent or inaccessible spreadsheet document.")
         except gspread.exceptions.WorksheetNotFound as error:
             logger.error("{}".format(error))
-            raise Exception("Trying to open non-existent sheet. Verify that the sheet name exists (%s)." % tab_id)
+            if create_if_does_not_exist:
+                return [self.client.open_by_key(document_id).add_worksheet(tab_id, rows="1", cols="1")]
+            else:
+                raise Exception("Trying to open non-existent sheet. Verify that the sheet name exists (%s)." % tab_id)
         except gspread.exceptions.APIError as error:
             if hasattr(error, 'response'):
                 error_json = error.response.json()
