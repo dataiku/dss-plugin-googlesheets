@@ -12,7 +12,7 @@
         {
             "name": "input_role",
             "label": "Dataset containing rows to append to the spreadsheet",
-            "arity": "UNARY",
+            "arity": "NARY",
             "required": true,
             "acceptsDataset": true
         }
@@ -95,17 +95,24 @@
             "defaultValue": "append"
         },
         {
-            "name": "tab_id",
-            "label": "Sheet name (legacy)",
-            "description": "Legacy, please prefer using the \"Sheet name\" selector below",
-            "type": "STRING",
-            "visibilityCondition": "model.show_advanced_parameters==true || (model.tabs_ids==null && model.tab_id!=null && model.tab_id!='')"
-        },
-        {
             "name": "tabs_ids",
             "label": "Sheet name",
             "type": "SELECT",
             "getChoicesFromPython": true
+        },
+        {
+            "name": "tab_id",
+            "label": "Sheet name",
+            "description": " ",
+            "type": "STRING",
+            "visibilityCondition": "model.tabs_ids=='dku_manual_select'"
+        },
+        {
+            "name": "column_with_tab_names",
+            "label": "Column with tabs names",
+            "type": "COLUMN",
+            "columnRole": "input_role",
+            "visibilityCondition": "model.tabs_ids == 'dku_column_select'"
         },
         {
             "name": "insert_format",
@@ -124,13 +131,6 @@
             ],
             "mandatory": true,
             "defaultValue": "USER_ENTERED"
-        },
-        {
-            "name": "show_advanced_parameters",
-            "label": "Show advanced parameters",
-            "description": "",
-            "type": "BOOLEAN",
-            "defaultValue": false
         }
     ],
 

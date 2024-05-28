@@ -9,7 +9,7 @@ class DSSConstants(object):
         "single-sign-on": "There is a problem with the selected Single Sign On preset"
     }
     DEFAULT_DATASET_FORMAT = {'separator': '\t', 'style': 'unix', 'compress': ''}
-    PLUGIN_VERSION = '1.2.0'
+    PLUGIN_VERSION = '1.3.0'
     DSS_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
     GSPREAD_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -52,18 +52,27 @@ def extract_credentials(config, can_raise=True):
 
 
 def get_tab_ids(config):
-    # New preset overides old preset
-    # If new preset is empty, new preset = [old preset]
-    legacy_tab_id = config.get("tab_id", None)
-    tabs_ids = config.get("tabs_ids")
-    tabs_ids = tabs_ids or []
-    if type(tabs_ids) == str:
-        tabs_ids = [tabs_ids]
-    if not tabs_ids:
-        if legacy_tab_id:
-            return [legacy_tab_id]
-    return tabs_ids
-
+    if "write_mode" in config:
+        tab_id = config.get("tab_id", None)
+        tab_selector = config.get("tabs_ids")
+        if tab_selector == "dku_manual_select":
+            return [tab_id]
+        elif type(tab_selector) == str:
+            return [tab_selector]
+        else:
+            return tab_selector
+    else:
+        # New preset overides old preset
+        # If new preset is empty, new preset = [old preset]
+        legacy_tab_id = config.get("tab_id", None)
+        tabs_ids = config.get("tabs_ids")
+        tabs_ids = tabs_ids or []
+        if type(tabs_ids) == str:
+            tabs_ids = [tabs_ids]
+        if not tabs_ids:
+            if legacy_tab_id:
+                return [legacy_tab_id]
+        return tabs_ids
 
 def get_unique_slugs(list_of_names):
     from slugify import slugify

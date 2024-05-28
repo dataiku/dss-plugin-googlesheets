@@ -1,5 +1,10 @@
 # Changelog
 
+## [Version 1.3.0](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.3.0) - Bugfix release - 2024-05-27
+
+- Create new tab if does not exist
+- Export several datasets to multiple tabs
+
 ## [Version 1.2.2](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.2) - Bugfix release - 2022-11-24
 
 - Add a specific error message when trying to import an Excel file

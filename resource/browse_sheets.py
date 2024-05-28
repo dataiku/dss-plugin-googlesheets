@@ -32,12 +32,17 @@ def do(payload, config, plugin_config, inputs):
     if not doc_id:
         return build_select_choices("Please set the document id")
     if parameter_name == "tabs_ids":
+        if len(inputs) > 1:
+            return build_select_choices("Tab name same as dataset's")
         try:
             session = GoogleSheetsSession(credentials, credentials_type)
             worksheets = session.get_spreadsheets(doc_id)
         except Exception as error_message:
             return build_select_choices("{}".format(error_message))
         choices = []
+        if "write_mode" in config:
+            choices.append({"label": "✍️ Enter manually", "value": "dku_manual_select"})
+            # choices.append({"label": "🏛️ Get from column", "value": "dku_column_select"})
         for worksheet in worksheets:
             worksheet_title = "{}".format(worksheet.title)
             choices.append({
