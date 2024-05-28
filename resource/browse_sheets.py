@@ -40,8 +40,9 @@ def do(payload, config, plugin_config, inputs):
         except Exception as error_message:
             return build_select_choices("{}".format(error_message))
         choices = []
-        choices.append({"label": "✍️ Enter manually", "value": "dku_manual_select"})
-        # choices.append({"label": "🏛️ Get from column", "value": "dku_column_select"})
+        if "write_mode" in config:
+            choices.append({"label": "✍️ Enter manually", "value": "dku_manual_select"})
+            # choices.append({"label": "🏛️ Get from column", "value": "dku_column_select"})
         for worksheet in worksheets:
             worksheet_title = "{}".format(worksheet.title)
             choices.append({

@@ -52,14 +52,27 @@ def extract_credentials(config, can_raise=True):
 
 
 def get_tab_ids(config):
-    tab_id = config.get("tab_id", None)
-    tab_selector = config.get("tabs_ids")
-    if tab_selector == "dku_manual_select":
-        return [tab_id]
-    elif type(tab_selector) == str:
-        return [tab_selector]
+    if "write_mode" in config:
+        tab_id = config.get("tab_id", None)
+        tab_selector = config.get("tabs_ids")
+        if tab_selector == "dku_manual_select":
+            return [tab_id]
+        elif type(tab_selector) == str:
+            return [tab_selector]
+        else:
+            return tab_selector
     else:
-        return tab_selector
+        # New preset overides old preset
+        # If new preset is empty, new preset = [old preset]
+        legacy_tab_id = config.get("tab_id", None)
+        tabs_ids = config.get("tabs_ids")
+        tabs_ids = tabs_ids or []
+        if type(tabs_ids) == str:
+            tabs_ids = [tabs_ids]
+        if not tabs_ids:
+            if legacy_tab_id:
+                return [legacy_tab_id]
+        return tabs_ids
 
 def get_unique_slugs(list_of_names):
     from slugify import slugify
