@@ -6,6 +6,7 @@ from googlesheets import GoogleSheetsSession
 from gspread.utils import rowcol_to_a1
 from safe_logger import SafeLogger
 from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids
+from googlesheets_append import append_rows
 
 
 logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
@@ -42,30 +43,6 @@ session = GoogleSheetsSession(credentials, credentials_type)
 
 # Load worksheet
 worksheet = session.get_spreadsheet(doc_id, tab_id)
-
-
-# Make available a method of later version of gspread (probably 3.4.0)
-# from https://github.com/burnash/gspread/pull/556
-def append_rows(self, values, value_input_option='RAW'):
-    """Adds multiple rows to the worksheet and populates them with values.
-    Widens the worksheet if there are more values than columns.
-    :param values: List of rows each row is List of values for the new row.
-    :param value_input_option: (optional) Determines how input data should
-                                be interpreted. See `ValueInputOption`_ in
-                                the Sheets API.
-    :type value_input_option: str
-    .. _ValueInputOption: https://developers.google.com/sheets/api/reference/rest/v4/ValueInputOption
-    """
-    params = {
-        'valueInputOption': value_input_option
-    }
-
-    body = {
-        'values': values
-    }
-
-    return self.spreadsheet.values_append(self.title, params, body)
-
 
 worksheet.append_rows = append_rows.__get__(worksheet, worksheet.__class__)
 

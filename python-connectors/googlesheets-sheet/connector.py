@@ -6,6 +6,7 @@ from slugify import slugify
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
 from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids, mark_date_columns, convert_dates_in_row
+from googlesheets_append import append_rows
 
 
 logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
@@ -94,7 +95,7 @@ class MyConnector(Connector):
                 raise Exception("Unimplemented")
 
     def get_writer(self, dataset_schema=None, dataset_partitioning=None,
-                   partition_id=None):
+                   partition_id=None, write_mode="OVERWRITE"):
 
         if self.result_format == 'json':
             raise Exception('JSON format not supported in write mode')
@@ -105,7 +106,7 @@ class MyConnector(Connector):
         if len(self.tabs_ids) > 1:
             raise Exception('Only one target sheet can be selected for writing')
 
-        return MyCustomDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id)
+        return MyCustomDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id, write_mode)
 
     def get_records_count(self, partitioning=None, partition_id=None):
         """
@@ -117,13 +118,14 @@ class MyConnector(Connector):
 
 
 class MyCustomDatasetWriter(CustomDatasetWriter):
-    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id):
+    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id, write_mode):
         CustomDatasetWriter.__init__(self)
         self.parent = parent
         self.config = config
         self.dataset_schema = dataset_schema
         self.dataset_partitioning = dataset_partitioning
         self.partition_id = partition_id
+        self.write_mode = write_mode
         self.buffer = []
         self.date_columns = []
         if self.parent.write_format == "USER_ENTERED":
@@ -140,14 +142,18 @@ class MyCustomDatasetWriter(CustomDatasetWriter):
 
     def flush(self):
         worksheet = self.parent.session.get_spreadsheet(self.parent.doc_id, self.parent.tabs_ids[0])
+        worksheet.append_rows = append_rows.__get__(worksheet, worksheet.__class__)
 
-        num_columns = len(self.buffer[0])
-        num_lines = len(self.buffer)
+        if self.write_mode == "APPEND":
+            worksheet.append_rows(self.buffer[1:], self.parent.write_format) #TODO: batch ?
+        elif self.write_mode == "OVERWRITE":
+            num_columns = len(self.buffer[0])
+            num_lines = len(self.buffer)
 
-        worksheet.resize(rows=num_lines, cols=num_columns)
+            worksheet.resize(rows=num_lines, cols=num_columns)
 
-        range = 'A1:%s' % rowcol_to_a1(num_lines, num_columns)
-        worksheet.update(range, self.buffer, value_input_option=self.parent.write_format)
+            range = 'A1:%s' % rowcol_to_a1(num_lines, num_columns)
+            worksheet.update(range, self.buffer, value_input_option=self.parent.write_format)
 
         self.buffer = []
 
