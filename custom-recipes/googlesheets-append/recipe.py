@@ -6,6 +6,7 @@ from googlesheets import GoogleSheetsSession
 from gspread.utils import rowcol_to_a1
 from safe_logger import SafeLogger
 from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids
+from time import sleep
 
 
 logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
@@ -39,6 +40,8 @@ insert_format = config.get("insert_format")
 write_mode = config.get("write_mode", "append")
 session = GoogleSheetsSession(credentials, credentials_type)
 
+batch_size = config.get("batch_size")
+insertion_delay = config.get("insertion_delay")
 
 # Load worksheet
 worksheet = session.get_spreadsheet(doc_id, tab_id)
@@ -103,7 +106,9 @@ for row in input_dataset.iter_rows():
     # write to spreadsheet by batch
     batch.append([serializer(v) for k, v in list(row.items())])
 
-    if len(batch) >= 50:
+    if len(batch) >= batch_size:
+        if insertion_delay > 0:
+            sleep(0.01 * insertion_delay)
         worksheet.append_rows(batch, insert_format)
         batch = []
 

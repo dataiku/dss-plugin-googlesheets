@@ -131,6 +131,22 @@
             "description": "",
             "type": "BOOLEAN",
             "defaultValue": false
+        },
+        {
+            "name": "batch_size",
+            "label": "Batch size",
+            "description": "Number of rows inserted in the dataframe at once. The bigger, the less API calls and the quickest pipeline, but putting too big a value could lead to out of memory errors, especially if there is a high number of columns.",
+            "type": "INT",
+            "visibilityCondition": "model.show_advanced_parameters==true",
+            "defaultValue": 50
+        },
+        {
+            "name": "insertion_delay",
+            "label": "Insertion delay (in ms)",
+            "description": "In milliseconds. Wait time between each API call to Google Sheets. If you are experiencing issues with API call limits, try increasing it gradually. Warning: it will slow down your pipeline.",
+            "type": "INT",
+            "visibilityCondition": "model.show_advanced_parameters==true",
+            "defaultValue": 0
         }
     ],
 
