@@ -138,7 +138,8 @@
             "description": "Number of rows inserted in the dataframe at once. The bigger, the less API calls and the quickest pipeline, but putting too big a value could lead to out of memory errors, especially if there is a high number of columns.",
             "type": "INT",
             "visibilityCondition": "model.show_advanced_parameters==true",
-            "defaultValue": 50
+            "defaultValue": 200,
+            "minI": 1
         },
         {
             "name": "insertion_delay",
