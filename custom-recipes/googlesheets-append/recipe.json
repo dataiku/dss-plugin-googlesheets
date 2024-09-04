@@ -143,7 +143,7 @@
         {
             "name": "insertion_delay",
             "label": "Insertion delay (in ms)",
-            "description": "In milliseconds. Wait time between each API call to Google Sheets. If you are experiencing issues with API call limits, try increasing it gradually. Warning: it will slow down your pipeline.",
+            "description": "In milliseconds. Wait time between each API call to Google Sheets. If you are experiencing issues with API call limits, try increasing it to 10 or 20 ms, since there is a 60 write-per-minute limit on users (https://developers.google.com/sheets/api/limits). Warning: it will slow down your pipeline.",
             "type": "INT",
             "visibilityCondition": "model.show_advanced_parameters==true",
             "defaultValue": 0
