@@ -3,6 +3,7 @@
 ## [Version 1.2.3](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.3) - Feature - 2024-09-10
 
 - Add support for native append mode for the custom dataset
+- Add parameter for batch_size and insertion_delay in recipe to avoid API limits
 
 ## [Version 1.2.2](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.2) - Bugfix release - 2022-11-24
 
