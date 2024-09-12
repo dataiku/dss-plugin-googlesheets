@@ -1,5 +1,10 @@
 # Changelog
 
+## [Version 1.2.3](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.3) - Feature - 2024-09-10
+
+- Add support for native append mode for the custom dataset
+- Add parameter for batch_size and insertion_delay in recipe to avoid API limits
+
 ## [Version 1.2.2](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.2) - Bugfix release - 2022-11-24
 
 - Add a specific error message when trying to import an Excel file
@@ -8,7 +13,7 @@
 
 - Add support for python 3.7 to 3.11
 
-## [Version 1.2.0](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.0) - Feature abd bugfix release - 2022-11-24
+## [Version 1.2.0](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.0) - Feature and bugfix release - 2022-11-24
 
 - Add a preset for storing access tokens
 - Add Google Single Sign On capability
