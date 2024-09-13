@@ -41,8 +41,8 @@ insert_format = config.get("insert_format")
 write_mode = config.get("write_mode", "append")
 session = GoogleSheetsSession(credentials, credentials_type)
 
-batch_size = config.get("batch_size")
-insertion_delay = config.get("insertion_delay")
+batch_size = config.get("batch_size", 200)
+insertion_delay = config.get("insertion_delay", 0)
 
 # Load worksheet
 worksheet = session.get_spreadsheet(doc_id, tab_id)
