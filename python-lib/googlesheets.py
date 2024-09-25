@@ -17,11 +17,14 @@ def _get_service_account_credentials(input_credentials):
     test_file = input_credentials.splitlines()[0]
     if os.path.isfile(test_file):
         try:
-            with open(test_file, 'r') as f:
+            with open(test_file, "r") as f:
                 credentials = json.load(f)
                 f.close()
         except Exception as e:
-            raise ValueError("Unable to read the JSON Service Account from file '%s'.\n%s" % (test_file, e))
+            raise ValueError(
+                "Unable to read the JSON Service Account from file '%s'.\n%s"
+                % (test_file, e)
+            )
     else:
         try:
             credentials = json.loads(input_credentials)
@@ -31,10 +34,8 @@ def _get_service_account_credentials(input_credentials):
     return credentials
 
 
-class GoogleSheetsSession():
-    scope = [
-        'https://www.googleapis.com/auth/spreadsheets'
-    ]
+class GoogleSheetsSession:
+    scope = ["https://www.googleapis.com/auth/spreadsheets"]
 
     def __init__(self, credentials, credentials_type="preset-service-account"):
         self.client = None
@@ -42,8 +43,7 @@ class GoogleSheetsSession():
             credentials = _get_service_account_credentials(credentials)
             self.client = gspread.authorize(
                 ServiceAccountCredentials.from_json_keyfile_dict(
-                    credentials,
-                    self.scope
+                    credentials, self.scope
                 )
             )
             self.email = credentials.get("client_email", "(email missing)")
@@ -66,22 +66,35 @@ class GoogleSheetsSession():
                 return self.client.open_by_key(document_id).worksheets()
         except gspread.exceptions.SpreadsheetNotFound as error:
             logger.error("{}".format(error))
-            raise Exception("Trying to open non-existent or inaccessible spreadsheet document.")
+            raise Exception(
+                "Trying to open non-existent or inaccessible spreadsheet document."
+            )
         except gspread.exceptions.WorksheetNotFound as error:
             logger.error("{}".format(error))
-            raise Exception("Trying to open non-existent sheet. Verify that the sheet name exists (%s)." % tab_id)
+            raise Exception(
+                "Trying to open non-existent sheet. Verify that the sheet name exists (%s)."
+                % tab_id
+            )
         except gspread.exceptions.APIError as error:
-            if hasattr(error, 'response'):
+            if hasattr(error, "response"):
                 error_json = error.response.json()
                 logger.error(error_json)
                 error_status = error_json.get("error", {}).get("status")
-                if error_status == 'PERMISSION_DENIED':
+                if error_status == "PERMISSION_DENIED":
                     error_message = error_json.get("error", {}).get("message", "")
-                    raise Exception("Access was denied with the following error: %s. Have you enabled the Sheets API? Have you shared the spreadsheet with %s?" % (error_message, self.email))
-                if error_status == 'NOT_FOUND':
-                    raise Exception("Trying to open non-existent spreadsheet document. Verify the document id exists (%s)." % document_id)
-                if error_status == 'FAILED_PRECONDITION':
-                    raise Exception("This document is not a Google Sheet. Please use the Google Drive plugin instead.")
+                    raise Exception(
+                        "Access was denied with the following error: %s. Have you enabled the Sheets API? Have you shared the spreadsheet with %s?"
+                        % (error_message, self.email)
+                    )
+                if error_status == "NOT_FOUND":
+                    raise Exception(
+                        "Trying to open non-existent spreadsheet document. Verify the document id exists (%s)."
+                        % document_id
+                    )
+                if error_status == "FAILED_PRECONDITION":
+                    raise Exception(
+                        "This document is not a Google Sheet. Please use the Google Drive plugin instead."
+                    )
             raise Exception("The Google API returned an error: %s" % error)
 
     def get_spreadsheet_title(self, document_id):
@@ -89,20 +102,33 @@ class GoogleSheetsSession():
             return self.client.open_by_key(document_id).title
         except gspread.exceptions.SpreadsheetNotFound as error:
             logger.error("{}".format(error))
-            raise Exception("Trying to open non-existent or inaccessible spreadsheet document.")
+            raise Exception(
+                "Trying to open non-existent or inaccessible spreadsheet document."
+            )
         except gspread.exceptions.WorksheetNotFound as error:
             logger.error("{}".format(error))
-            raise Exception("Trying to open non-existent sheet. Verify that the sheet name exists (%s)." % document_id)
+            raise Exception(
+                "Trying to open non-existent sheet. Verify that the sheet name exists (%s)."
+                % document_id
+            )
         except gspread.exceptions.APIError as error:
-            if hasattr(error, 'response'):
+            if hasattr(error, "response"):
                 error_json = error.response.json()
                 logger.error(error_json)
                 error_status = error_json.get("error", {}).get("status")
-                if error_status == 'PERMISSION_DENIED':
+                if error_status == "PERMISSION_DENIED":
                     error_message = error_json.get("error", {}).get("message", "")
-                    raise Exception("Access was denied with the following error: %s. Have you enabled the Sheets API? Have you shared the spreadsheet with %s?" % (error_message, self.email))
-                if error_status == 'NOT_FOUND':
-                    raise Exception("Trying to open non-existent spreadsheet document. Verify the document id exists (%s)." % document_id)
-                if error_status == 'FAILED_PRECONDITION':
-                    raise Exception("This document is not a Google Sheet. Please use the Google Drive plugin instead.")
+                    raise Exception(
+                        "Access was denied with the following error: %s. Have you enabled the Sheets API? Have you shared the spreadsheet with %s?"
+                        % (error_message, self.email)
+                    )
+                if error_status == "NOT_FOUND":
+                    raise Exception(
+                        "Trying to open non-existent spreadsheet document. Verify the document id exists (%s)."
+                        % document_id
+                    )
+                if error_status == "FAILED_PRECONDITION":
+                    raise Exception(
+                        "This document is not a Google Sheet. Please use the Google Drive plugin instead."
+                    )
             raise Exception("The Google API returned an error: %s" % error)

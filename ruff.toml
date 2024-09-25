@@ -1,0 +1,4 @@
+# Excludes commonly ignored directories
+exclude = [
+    "venv",
+]

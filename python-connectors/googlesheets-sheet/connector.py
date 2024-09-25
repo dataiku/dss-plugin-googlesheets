@@ -5,7 +5,13 @@ from gspread.utils import rowcol_to_a1
 from slugify import slugify
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
-from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids, mark_date_columns, convert_dates_in_row
+from googlesheets_common import (
+    DSSConstants,
+    extract_credentials,
+    get_tab_ids,
+    mark_date_columns,
+    convert_dates_in_row,
+)
 from googlesheets_append import append_rows
 
 
@@ -13,10 +19,13 @@ logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
 
 
 class MyConnector(Connector):
-
     def __init__(self, config):
         Connector.__init__(self, config)  # pass the parameters to the base class
-        logger.info("GoogleSheets connector v{} starting with {}".format(DSSConstants.PLUGIN_VERSION, logger.filter_secrets(config)))
+        logger.info(
+            "GoogleSheets connector v{} starting with {}".format(
+                DSSConstants.PLUGIN_VERSION, logger.filter_secrets(config)
+            )
+        )
         credentials, credentials_type = extract_credentials(config)
         self.session = GoogleSheetsSession(credentials, credentials_type)
         self.doc_id = self.config.get("doc_id")
@@ -28,13 +37,13 @@ class MyConnector(Connector):
 
     def get_unique_slug(self, string):
         string = slugify(string, max_length=25, separator="_", lowercase=False)
-        if string == '':
-            string = 'none'
+        if string == "":
+            string = "none"
         test_string = string
         i = 0
         while test_string in self.list_unique_slugs:
             i += 1
-            test_string = string + '_' + str(i)
+            test_string = string + "_" + str(i)
         self.list_unique_slugs.append(test_string)
         return test_string
 
@@ -45,8 +54,13 @@ class MyConnector(Connector):
         # Better let DSS handle this
         return None
 
-    def generate_rows(self, dataset_schema=None, dataset_partitioning=None,
-                      partition_id=None, records_limit=-1):
+    def generate_rows(
+        self,
+        dataset_schema=None,
+        dataset_partitioning=None,
+        partition_id=None,
+        records_limit=-1,
+    ):
         """
         The main reading method.
 
@@ -66,47 +80,57 @@ class MyConnector(Connector):
             except IndexError:
                 columns = []
 
-            if self.add_sheet_name_column and self.result_format == 'first-row-header':
+            if self.add_sheet_name_column and self.result_format == "first-row-header":
                 columns.insert(0, "Sheet name")
 
             self.list_unique_slugs = []
             columns_slug = list(map(self.get_unique_slug, columns))
 
-            if self.result_format == 'first-row-header':
+            if self.result_format == "first-row-header":
                 for row in rows[1:]:
                     if self.add_sheet_name_column:
                         row.insert(0, "{}".format(worksheet.title))
                     yield OrderedDict(zip(columns_slug, row))
 
-            elif self.result_format == 'no-header':
+            elif self.result_format == "no-header":
                 for row in rows:
                     if self.add_sheet_name_column:
                         row.insert(0, "{}".format(worksheet.title))
                     yield OrderedDict(zip(range(1, len(columns) + 1), row))
 
-            elif self.result_format == 'json':
+            elif self.result_format == "json":
                 for row in rows:
                     if self.add_sheet_name_column:
                         row.insert(0, "{}".format(worksheet.title))
                     yield {"json": json.dumps(row)}
 
             else:
-
                 raise Exception("Unimplemented")
 
-    def get_writer(self, dataset_schema=None, dataset_partitioning=None,
-                   partition_id=None, write_mode="OVERWRITE"):
-
-        if self.result_format == 'json':
-            raise Exception('JSON format not supported in write mode')
+    def get_writer(
+        self,
+        dataset_schema=None,
+        dataset_partitioning=None,
+        partition_id=None,
+        write_mode="OVERWRITE",
+    ):
+        if self.result_format == "json":
+            raise Exception("JSON format not supported in write mode")
 
         if not self.tabs_ids:
-            raise Exception('The name of the target sheet should be set')
+            raise Exception("The name of the target sheet should be set")
 
         if len(self.tabs_ids) > 1:
-            raise Exception('Only one target sheet can be selected for writing')
+            raise Exception("Only one target sheet can be selected for writing")
 
-        return MyCustomDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id, write_mode)
+        return MyCustomDatasetWriter(
+            self.config,
+            self,
+            dataset_schema,
+            dataset_partitioning,
+            partition_id,
+            write_mode,
+        )
 
     def get_records_count(self, partitioning=None, partition_id=None):
         """
@@ -118,7 +142,15 @@ class MyConnector(Connector):
 
 
 class MyCustomDatasetWriter(CustomDatasetWriter):
-    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id, write_mode):
+    def __init__(
+        self,
+        config,
+        parent,
+        dataset_schema,
+        dataset_partitioning,
+        partition_id,
+        write_mode,
+    ):
         CustomDatasetWriter.__init__(self)
         self.parent = parent
         self.config = config
@@ -130,9 +162,11 @@ class MyCustomDatasetWriter(CustomDatasetWriter):
         self.date_columns = []
         if self.parent.write_format == "USER_ENTERED":
             self.date_columns = mark_date_columns(dataset_schema)
-            logger.info("Columns #{} are marked for date conversion".format(self.date_columns))
+            logger.info(
+                "Columns #{} are marked for date conversion".format(self.date_columns)
+            )
         columns = [column["name"] for column in dataset_schema["columns"]]
-        if parent.result_format == 'first-row-header':
+        if parent.result_format == "first-row-header":
             self.buffer.append(columns)
 
     def write_row(self, row):
@@ -141,19 +175,25 @@ class MyCustomDatasetWriter(CustomDatasetWriter):
         self.buffer.append(row)
 
     def flush(self):
-        worksheet = self.parent.session.get_spreadsheet(self.parent.doc_id, self.parent.tabs_ids[0])
+        worksheet = self.parent.session.get_spreadsheet(
+            self.parent.doc_id, self.parent.tabs_ids[0]
+        )
         worksheet.append_rows = append_rows.__get__(worksheet, worksheet.__class__)
 
         if self.write_mode == "APPEND":
-            worksheet.append_rows(self.buffer[1:], self.parent.write_format) #TODO: batch ?
+            worksheet.append_rows(
+                self.buffer[1:], self.parent.write_format
+            )  # TODO: batch ?
         elif self.write_mode == "OVERWRITE":
             num_columns = len(self.buffer[0])
             num_lines = len(self.buffer)
 
             worksheet.resize(rows=num_lines, cols=num_columns)
 
-            range = 'A1:%s' % rowcol_to_a1(num_lines, num_columns)
-            worksheet.update(range, self.buffer, value_input_option=self.parent.write_format)
+            range = "A1:%s" % rowcol_to_a1(num_lines, num_columns)
+            worksheet.update(
+                range, self.buffer, value_input_option=self.parent.write_format
+            )
 
         self.buffer = []
 
