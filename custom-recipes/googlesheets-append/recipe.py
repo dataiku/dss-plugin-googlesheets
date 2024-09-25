@@ -1,7 +1,11 @@
 # -*- coding: utf-8 -*-
 import datetime
 import dataiku
-from dataiku.customrecipe import get_input_names_for_role, get_output_names_for_role, get_recipe_config
+from dataiku.customrecipe import (
+    get_input_names_for_role,
+    get_output_names_for_role,
+    get_recipe_config,
+)
 from googlesheets import GoogleSheetsSession
 from gspread.utils import rowcol_to_a1
 from safe_logger import SafeLogger
@@ -12,16 +16,18 @@ from googlesheets_append import append_rows
 
 logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
 
-logger.info("GoogleSheets custom recipe v{} starting".format(DSSConstants.PLUGIN_VERSION))
+logger.info(
+    "GoogleSheets custom recipe v{} starting".format(DSSConstants.PLUGIN_VERSION)
+)
 
 # Input
-input_name = get_input_names_for_role('input_role')[0]
+input_name = get_input_names_for_role("input_role")[0]
 input_dataset = dataiku.Dataset(input_name)
 input_schema = input_dataset.read_schema()
 
 
 # Output
-output_name = get_output_names_for_role('output_role')[0]
+output_name = get_output_names_for_role("output_role")[0]
 output_dataset = dataiku.Dataset(output_name)
 output_dataset.write_schema(input_schema)
 
@@ -79,7 +85,6 @@ if write_mode == "overwrite":
     columns = [column["name"] for column in input_schema]
     batch.append(columns)
 for row in input_dataset.iter_rows():
-
     # write to spreadsheet by batch
     batch.append([serializer(v) for k, v in list(row.items())])
 

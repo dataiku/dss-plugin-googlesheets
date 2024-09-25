@@ -1,6 +1,11 @@
 import dataiku
 from dataiku.runnables import Runnable, ResultTable
-from googlesheets_common import DSSConstants, extract_credentials, get_unique_slugs, get_unique_names
+from googlesheets_common import (
+    DSSConstants,
+    extract_credentials,
+    get_unique_slugs,
+    get_unique_names,
+)
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
 
@@ -17,7 +22,11 @@ class GoogleSheetsToDatasetsImporter(Runnable):
         :param config: the dict of the configuration of the object
         :param plugin_config: contains the plugin settings
         """
-        logger.info("GoogleSheets macro v{} starting with {} on project {}".format(DSSConstants.PLUGIN_VERSION, logger.filter_secrets(config), project_key))
+        logger.info(
+            "GoogleSheets macro v{} starting with {} on project {}".format(
+                DSSConstants.PLUGIN_VERSION, logger.filter_secrets(config), project_key
+            )
+        )
         self.project_key = project_key
         self.config = config
         self.is_dry_run = self.config.get("is_dry_run", True)
@@ -37,10 +46,10 @@ class GoogleSheetsToDatasetsImporter(Runnable):
 
     def get_progress_target(self):
         """
-        If the runnable will return some progress info, have this function return a tuple of 
+        If the runnable will return some progress info, have this function return a tuple of
         (target, unit) where unit is one of: SIZE, FILES, RECORDS, NONE
         """
-        return (len(self.tabs_ids), 'FILES')
+        return (len(self.tabs_ids), "FILES")
 
     def run(self, progress_callback):
         """
@@ -57,7 +66,9 @@ class GoogleSheetsToDatasetsImporter(Runnable):
 
         target_zone = get_zone_from_name(project_flow, spreadsheet_title)
         if not target_zone:
-            result_table.add_record([self._get_text("creating").format(spreadsheet_title=spreadsheet_title)])
+            result_table.add_record(
+                [self._get_text("creating").format(spreadsheet_title=spreadsheet_title)]
+            )
             if not self.is_dry_run:
                 target_zone = project_flow.create_zone(spreadsheet_title)
 
@@ -72,7 +83,9 @@ class GoogleSheetsToDatasetsImporter(Runnable):
                 index += 1
                 progress_callback(index)
                 dataset = None
-                worksheets_titles.append("{}_{}".format(spreadsheet_title, worksheet_title))
+                worksheets_titles.append(
+                    "{}_{}".format(spreadsheet_title, worksheet_title)
+                )
                 worksheets_titles = get_unique_slugs(worksheets_titles)
                 unique_worksheet_title = worksheets_titles[-1]
 
@@ -84,21 +97,34 @@ class GoogleSheetsToDatasetsImporter(Runnable):
                 dataset_title = unique_worksheet_title
                 if dataset_title in self.project_datasets:
                     if self.creation_mode == "skip":
-                        result_table.add_record([self._get_text("skipping").format(dataset_title=dataset_title)])
+                        result_table.add_record(
+                            [
+                                self._get_text("skipping").format(
+                                    dataset_title=dataset_title
+                                )
+                            ]
+                        )
                         continue
-                    result_table.add_record([self._get_text("updating").format(dataset_title=dataset_title)])
+                    result_table.add_record(
+                        [self._get_text("updating").format(dataset_title=dataset_title)]
+                    )
                     if not self.is_dry_run:
                         dataset = self.project.get_dataset(dataset_title)
                 else:
                     params = {
                         "connection": "filesystem_folders",
-                        "path": "{}/{}".format(self.project_key, dataset_title)
+                        "path": "{}/{}".format(self.project_key, dataset_title),
                     }
-                    result_table.add_record([self._get_text("adding").format(dataset_title=dataset_title)])
+                    result_table.add_record(
+                        [self._get_text("adding").format(dataset_title=dataset_title)]
+                    )
                     if not self.is_dry_run:
                         dataset = self.project.create_dataset(
-                            dataset_title, "Filesystem", params=params, formatType='csv',
-                            formatParams=DSSConstants.DEFAULT_DATASET_FORMAT
+                            dataset_title,
+                            "Filesystem",
+                            params=params,
+                            formatType="csv",
+                            formatParams=DSSConstants.DEFAULT_DATASET_FORMAT,
                         )
                     if target_zone and dataset:
                         dataset.move_to_zone(target_zone)
@@ -116,7 +142,9 @@ class GoogleSheetsToDatasetsImporter(Runnable):
                             for row in data_rows:
                                 writer.write_row_array(row)
         if self.is_dry_run:
-            result_table.add_record(["⚠️ You have to un-check the 'Dry run' box to implement these actions."])
+            result_table.add_record(
+                ["⚠️ You have to un-check the 'Dry run' box to implement these actions."]
+            )
         return result_table
 
     def _get_text(self, text_description):

@@ -10,7 +10,7 @@ class SafeLogger(object):
         self.logger = logging.getLogger(self.name)
         logging.basicConfig(
             level=logging.INFO,
-            format='{} %(levelname)s - %(message)s'.format(self.name)
+            format="{} %(levelname)s - %(message)s".format(self.name),
         )
         self.forbiden_keys = forbiden_keys
 
