@@ -1,5 +1,9 @@
 # Changelog
 
+## [Version 1.2.4](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.3) - Bugfix - 2025-02-12
+
+- Fix `Service account preset` and legacy `Service account credentials`
+
 ## [Version 1.2.3](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.3) - Feature - 2024-09-10
 
 - Add support for native append mode for the custom dataset
