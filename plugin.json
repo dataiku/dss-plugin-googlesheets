@@ -1,6 +1,6 @@
 {
 	"id": "googlesheets",
-	"version": "1.2.3",
+	"version": "1.2.4",
 	"meta": {
 		"label": "Google Sheets",
 		"description": "Read from and write to Google Sheets",
