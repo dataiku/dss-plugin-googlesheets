@@ -60,6 +60,14 @@ class GoogleSheetsSession():
         try:
             # worksheet and worksheets both make a single fetch_sheet_metadata request
             # so better use one worksheets than multiple worksheet
+            #'add_worksheet', 'batch_update', 'client', 'del_worksheet', 'duplicate_sheet',
+            #'fetch_sheet_metadata', 'get_worksheet', 'id', 'list_permissions',
+            # 'remove_permissions', 'share', 'sheet1', 'title', 'updated', 'values_append', 
+            # 'values_batch_get', 'values_batch_update', 'values_clear', 'values_get', 'values_update', 'worksheet', 'worksheets'
+            bla = self.client.open_by_key(document_id).fetch_sheet_metadata()
+            #bla = self.client.drive.files()
+            #print("ALX:bla={}".format(bla))
+            print("ALX:dir bla={}".format(dir(bla)))
             if tab_id:
                 return [self.client.open_by_key(document_id).worksheet(tab_id)]
             else:
