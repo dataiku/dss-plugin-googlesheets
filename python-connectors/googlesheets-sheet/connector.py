@@ -63,12 +63,6 @@ class MyConnector(Connector):
         for worksheet in worksheets:
             if not should_process_worksheet(worksheet, self.tabs_ids):
                 continue
-            # if self.tabs_ids and len(self.tabs_ids)>0:
-            #     first_tabs_id = self.tabs_ids[0]
-            #     if isinstance(first_tabs_id, str) and (worksheet.title not in self.tabs_ids):
-            #         continue
-            #     elif isinstance(first_tabs_id, int) and (worksheet.id not in self.tabs_ids):
-            #         continue
             rows = worksheet.get_all_values()
             try:
                 columns = rows[0]
