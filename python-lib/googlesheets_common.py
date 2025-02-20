@@ -124,3 +124,20 @@ def convert_dates_in_row(row, date_columns):
         row[date_column] = format_date(
             row[date_column], DSSConstants.DSS_DATE_FORMAT, DSSConstants.GSPREAD_DATE_FORMAT)
     return row
+
+
+def should_process_worksheet(worksheet, tabs_ids):
+    if not tabs_ids: # could not be [0]
+        # if nothing is defined, the whole spreadsheets needs to be processed
+        return True
+    first_tab_id = tabs_ids[0]
+    if isinstance(first_tab_id, str):
+        if worksheet.name in tabs_ids:
+            return True
+    elif isinstance(first_tab_id, int):
+        worksheet_id = worksheet.id
+        if worksheet_id == 0:
+            worksheet_id = -1
+        if worksheet_id in tabs_ids:
+            return True
+    return False

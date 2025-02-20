@@ -60,9 +60,13 @@ class GoogleSheetsSession():
         try:
             # worksheet and worksheets both make a single fetch_sheet_metadata request
             # so better use one worksheets than multiple worksheet
-            if tab_id and isinstance(tab_id, str):
+            if (tab_id is not None) and isinstance(tab_id, str):
+                # tab_id contains the name of the worksheet
+                # we can search directly for the right worksheet
                 return [self.client.open_by_key(document_id).worksheet(tab_id)]
-            elif tab_id and isinstance(tab_id, int):
+            elif (tab_id is not None) and isinstance(tab_id, int):
+                # tab_id contains the id of the worksheet
+                # we grab them all and iterate later
                 worksheets = self.client.open_by_key(document_id).worksheets()
             else:
                 return self.client.open_by_key(document_id).worksheets()
@@ -86,6 +90,11 @@ class GoogleSheetsSession():
                     raise Exception("This document is not a Google Sheet. Please use the Google Drive plugin instead.")
             raise Exception("The Google API returned an error: %s" % error)
         for worksheet in worksheets:
+            # tab_id contains the worksheet's id
+            # we need to iterate to find the right one
+            if tab_id == -1:
+                # Workaround for DSS UI issue with 0
+                tab_id = 0
             if tab_id == worksheet.id:
                 return [worksheet]
         raise Exception("The spreadsheets ID {} was not found".format(tab_id))

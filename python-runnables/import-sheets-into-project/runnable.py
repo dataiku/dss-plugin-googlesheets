@@ -1,6 +1,9 @@
 import dataiku
 from dataiku.runnables import Runnable, ResultTable
-from googlesheets_common import DSSConstants, extract_credentials, get_unique_slugs, get_unique_names
+from googlesheets_common import (
+    DSSConstants, extract_credentials, get_unique_slugs, get_unique_names,
+    should_process_worksheet
+)
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
 
@@ -68,7 +71,7 @@ class GoogleSheetsToDatasetsImporter(Runnable):
         index = 0
         for worksheet in self.worksheets:
             worksheet_title = worksheet.title
-            if self._should_process_worksheet(worksheet):
+            if should_process_worksheet(worksheet, self.tabs_ids):
                 index += 1
                 progress_callback(index)
                 dataset = None
@@ -118,18 +121,6 @@ class GoogleSheetsToDatasetsImporter(Runnable):
         if self.is_dry_run:
             result_table.add_record(["⚠️ You have to un-check the 'Dry run' box to implement these actions."])
         return result_table
-
-    def _should_process_worksheet(self, worksheet):
-        if not self.tabs_ids:
-            return False
-        first_tab_id = self.tabs_ids[0]
-        if isinstance(first_tab_id, str):
-            if worksheet.name in self.tabs_ids:
-                return True
-        elif isinstance(first_tab_id, int):
-            if worksheet.id in self.tabs_ids:
-                return True
-        return False
 
     def _get_text(self, text_description):
         DRY_RUN_TEXTS = {
