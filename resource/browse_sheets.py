@@ -40,8 +40,13 @@ def do(payload, config, plugin_config, inputs):
         choices = []
         for worksheet in worksheets:
             worksheet_title = "{}".format(worksheet.title)
+            worksheet_id = worksheet.id
+            if worksheet_id == 0:
+                # DSS won't store in the presets if the value is 0
+                # and the id for the first (default) sheet in the spreadsheet is 0
+                worksheet_id = -1  # Workaround
             choices.append({
                 "label": worksheet_title,
-                "value": worksheet_title
+                "value": worksheet_id
             })
         return build_select_choices(choices)

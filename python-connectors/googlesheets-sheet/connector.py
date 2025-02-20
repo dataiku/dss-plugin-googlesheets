@@ -5,7 +5,10 @@ from gspread.utils import rowcol_to_a1
 from slugify import slugify
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
-from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids, mark_date_columns, convert_dates_in_row
+from googlesheets_common import (
+    DSSConstants, extract_credentials, get_tab_ids, mark_date_columns,
+    convert_dates_in_row, should_process_worksheet
+)
 from googlesheets_append import append_rows
 
 
@@ -58,7 +61,7 @@ class MyConnector(Connector):
         worksheets = self.session.get_spreadsheets(self.doc_id)
 
         for worksheet in worksheets:
-            if self.tabs_ids and (worksheet.title not in self.tabs_ids):
+            if not should_process_worksheet(worksheet, self.tabs_ids):
                 continue
             rows = worksheet.get_all_values()
             try:

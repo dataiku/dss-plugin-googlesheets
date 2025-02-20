@@ -1,6 +1,9 @@
 import dataiku
 from dataiku.runnables import Runnable, ResultTable
-from googlesheets_common import DSSConstants, extract_credentials, get_unique_slugs, get_unique_names
+from googlesheets_common import (
+    DSSConstants, extract_credentials, get_unique_slugs, get_unique_names,
+    should_process_worksheet
+)
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
 
@@ -68,7 +71,7 @@ class GoogleSheetsToDatasetsImporter(Runnable):
         index = 0
         for worksheet in self.worksheets:
             worksheet_title = worksheet.title
-            if worksheet_title in self.tabs_ids:
+            if should_process_worksheet(worksheet, self.tabs_ids):
                 index += 1
                 progress_callback(index)
                 dataset = None
