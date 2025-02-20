@@ -60,8 +60,10 @@ class GoogleSheetsSession():
         try:
             # worksheet and worksheets both make a single fetch_sheet_metadata request
             # so better use one worksheets than multiple worksheet
-            if tab_id:
+            if tab_id and isinstance(tab_id, str):
                 return [self.client.open_by_key(document_id).worksheet(tab_id)]
+            elif tab_id and isinstance(tab_id, int):
+                worksheets = self.client.open_by_key(document_id).worksheets()
             else:
                 return self.client.open_by_key(document_id).worksheets()
         except gspread.exceptions.SpreadsheetNotFound as error:
@@ -83,6 +85,10 @@ class GoogleSheetsSession():
                 if error_status == 'FAILED_PRECONDITION':
                     raise Exception("This document is not a Google Sheet. Please use the Google Drive plugin instead.")
             raise Exception("The Google API returned an error: %s" % error)
+        for worksheet in worksheets:
+            if tab_id == worksheet.id:
+                return [worksheet]
+        raise Exception("The spreadsheets ID {} was not found".format(tab_id))
 
     def get_spreadsheet_title(self, document_id):
         try:

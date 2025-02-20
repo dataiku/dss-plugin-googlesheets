@@ -40,8 +40,9 @@ def do(payload, config, plugin_config, inputs):
         choices = []
         for worksheet in worksheets:
             worksheet_title = "{}".format(worksheet.title)
+            worksheet_id = worksheet.id
             choices.append({
                 "label": worksheet_title,
-                "value": worksheet_title
+                "value": worksheet_id
             })
         return build_select_choices(choices)

@@ -57,7 +57,7 @@ def get_tab_ids(config):
     legacy_tab_id = config.get("tab_id", None)
     tabs_ids = config.get("tabs_ids")
     tabs_ids = tabs_ids or []
-    if type(tabs_ids) == str:
+    if type(tabs_ids) in [str, int]:
         tabs_ids = [tabs_ids]
     if not tabs_ids:
         if legacy_tab_id:
