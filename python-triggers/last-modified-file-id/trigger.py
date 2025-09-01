@@ -20,7 +20,7 @@ trigger = Trigger()
 config = plugin_config.get("config", {})
 
 project = Project()
-variables = project.get_variables()
+project_variables = project.get_variables()
 prefix = config.get("prefix", "googlesheets_trigger_")
 
 google_sheet_file_id = config.get("google_sheets_file_id")
@@ -33,9 +33,8 @@ if target_dataset is None:
     logger.error("Target dataset is empty")
     raise Exception("Target dataset cannot be left empty")
 
-key_name = "{}{}".format(prefix, target_dataset)
-key_value = variables.get("standard", {}).get(key_name, 0)
-local_dataset_last_modified = key_value
+project_variable_name = "{}{}".format(prefix, target_dataset)
+local_dataset_last_modified = project_variables.get("standard", {}).get(project_variable_name, 0)
 
 plugin_config = plugin_config.get("pluginConfig", {})
 session = GoogleDriveSession(config, plugin_config)
@@ -61,8 +60,8 @@ if isinstance(remote_file_last_modified_epoch, int) and isinstance(local_dataset
     if remote_file_last_modified_epoch > local_dataset_last_modified:
         logger.info("remote epoch {} > local epoch {}, firing the trigger".format(remote_file_last_modified_epoch, local_dataset_last_modified))
         remote_file_last_modified_epoch = int(time.time()) * 1000
-        variables["standard"][key_name] = remote_file_last_modified_epoch
-        project.set_variables(variables)
+        project_variables["standard"][project_variable_name] = remote_file_last_modified_epoch
+        project.set_variables(project_variables)
         trigger.fire()
     else:
         logger.info("Target dataset is up to date")
