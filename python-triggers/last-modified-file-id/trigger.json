@@ -1,7 +1,7 @@
 {
     "meta" : {
-        "label": "Last modified based on file ID",
-        "description": "This trigger is fired every time the last modified date of the remote document is more recent than the local dataset",
+        "label": "Last modified based on remote spreadsheet",
+        "description": "This trigger is fired every time the last modified date of the remote spreadsheet is more recent than the local dataset",
         "icon": "fas fa-icon-file"
     },
     "params": [
