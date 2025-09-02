@@ -15,7 +15,6 @@ logging.basicConfig(level=logging.INFO,
 current_project_key = default_project_key()
 plugin_config = get_plugin_config()
 trigger_config = get_trigger_config()
-print("TRIGGER", str(trigger_config))
 
 trigger = Trigger()
 config = plugin_config.get("config", {})
