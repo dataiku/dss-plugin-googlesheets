@@ -49,13 +49,6 @@
             "mandatory": true
         },
         {
-            "name": "target_dataset",
-            "label": "Target dataset",
-            "description": "DSS dataset to keep in sync with the Google Sheet document",
-            "type": "DATASET",
-            "mandatory": true
-        },
-        {
             "name": "prefix",
             "label": "Prefix",
             "description": "",

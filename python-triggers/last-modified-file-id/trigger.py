@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.INFO,
 current_project_key = default_project_key()
 plugin_config = get_plugin_config()
 trigger_config = get_trigger_config()
+print("TRIGGER", str(trigger_config))
 
 trigger = Trigger()
 config = plugin_config.get("config", {})
@@ -28,13 +29,8 @@ if google_sheet_file_id is None:
     logger.error("File ID is empty")
     raise Exception("File ID cannot be left empty")
 
-target_dataset = config.get("target_dataset")
-if target_dataset is None:
-    logger.error("Target dataset is empty")
-    raise Exception("Target dataset cannot be left empty")
-
-project_variable_name = "{}{}".format(prefix, target_dataset)
-local_dataset_last_modified = project_variables.get("standard", {}).get(project_variable_name, 0)
+project_variable_name = "{}_{}".format(prefix, google_sheet_file_id)
+last_modified = project_variables.get("standard", {}).get(project_variable_name, 0)
 
 plugin_config = plugin_config.get("pluginConfig", {})
 session = GoogleDriveSession(config, plugin_config)
@@ -50,18 +46,17 @@ except Exception as error_message:
         )
     )
 
-local_dataset_info = Dataset(
-    target_dataset,
-    project_key=current_project_key,
-    ignore_flow=False
-).get_files_info()
-local_dataset_global_paths = local_dataset_info.get("globalPaths", [])
-if isinstance(remote_file_last_modified_epoch, int) and isinstance(local_dataset_last_modified, int):
-    if remote_file_last_modified_epoch > local_dataset_last_modified:
-        logger.info("remote epoch {} > local epoch {}, firing the trigger".format(remote_file_last_modified_epoch, local_dataset_last_modified))
-        remote_file_last_modified_epoch = int(time.time()) * 1000
-        project_variables["standard"][project_variable_name] = remote_file_last_modified_epoch
-        project.set_variables(project_variables)
-        trigger.fire()
-    else:
-        logger.info("Target dataset is up to date")
+local_last_modified_pretty = time.strftime('%Y-%m-%d %H:%M:%S%z', time.gmtime(last_modified/1000))
+remote_last_modified_pretty = time.strftime('%Y-%m-%d %H:%M:%S%z', time.gmtime(remote_file_last_modified_epoch/1000))
+
+logger.info("Trigger.{}.lastLocalTime: {} ({})".format(project_variable_name, last_modified, local_last_modified_pretty))
+logger.info("Trigger.{}.remoteTime: {} ({})".format(project_variable_name, remote_file_last_modified_epoch, remote_last_modified_pretty))
+if remote_file_last_modified_epoch > last_modified:
+    logger.info("remote epoch {} > local epoch {}, firing the trigger".format(remote_file_last_modified_epoch, last_modified))
+    remote_file_last_modified_epoch = int(time.time()) * 1000
+    project_variables["standard"][project_variable_name] = remote_file_last_modified_epoch
+    project.set_variables(project_variables)
+    trigger.fire()
+else:
+    logger.info("Remote spreadsheet has not been modified")
+    
