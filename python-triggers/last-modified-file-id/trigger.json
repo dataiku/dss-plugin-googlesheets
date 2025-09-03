@@ -53,7 +53,7 @@
             "label": "Prefix",
             "description": "",
             "type": "STRING",
-            "defaultValue": "googlesheets_trigger_"
+            "defaultValue": "googlesheets_trigger"
         }
     ]
 }
