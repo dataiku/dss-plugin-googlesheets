@@ -1,0 +1,59 @@
+{
+    "meta" : {
+        "label": "Last modified based on remote spreadsheet",
+        "description": "This trigger is fired every time the last modified date of the remote spreadsheet is more recent than the local dataset",
+        "icon": "fas fa-icon-file"
+    },
+    "params": [
+        {
+            "name": "auth_type",
+            "label": "Type of authentication",
+            "type": "SELECT",
+            "selectChoices": [
+                {
+                    "value": "single-sign-on",
+                    "label": "Single Sign On"
+                },
+                {
+                    "value": "preset-service-account",
+                    "label": "Service account preset"
+                }
+            ]
+        },
+        {
+            "name": "credentials",
+            "label": "Service Account credentials",
+            "description": "Copy/paste the JSON private key provided by Google, or a path to a file containing the key. Click on the link above above to read how to get it.",
+            "type": "TEXTAREA",
+            "visibilityCondition": "model.auth_type == 'legacy-service-account' || (model.auth_type == null && model.credentials!=null)"
+        },
+        {
+            "name": "preset_credentials_service_account",
+            "label": "Service account preset",
+            "type": "PRESET",
+            "parameterSetId": "service-account",
+            "visibilityCondition": "model.auth_type == 'preset-service-account'"
+        },
+        {
+            "name": "oauth_credentials",
+            "label": "Single Sign On",
+            "type": "PRESET",
+            "parameterSetId": "single-sign-on",
+            "visibilityCondition": "model.auth_type == 'single-sign-on'"
+        },
+        {
+            "name": "google_sheets_file_id",
+            "label": "Google Sheets file ID",
+            "description": "ID of Google Sheet document to keep in sync",
+            "type": "STRING",
+            "mandatory": true
+        },
+        {
+            "name": "prefix",
+            "label": "Prefix",
+            "description": "",
+            "type": "STRING",
+            "defaultValue": "googlesheets_trigger"
+        }
+    ]
+}

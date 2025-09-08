@@ -1,5 +1,10 @@
 # Changelog
 
+## [Version 1.2.5](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.5) - Feature - 2025-02-17
+
+- Add a scenario step to check on Google Sheets document update based on its by id
+- Raise an error and point to documention when inappropriate usage of the append recipe is detected
+
 ## [Version 1.2.4](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.4) - Bugfix - 2025-02-12
 
 - Fix `Service account preset` and legacy `Service account credentials`

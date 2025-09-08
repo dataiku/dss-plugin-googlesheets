@@ -9,7 +9,7 @@ class DSSConstants(object):
         "single-sign-on": "There is a problem with the selected Single Sign On preset"
     }
     DEFAULT_DATASET_FORMAT = {'separator': '\t', 'style': 'unix', 'compress': ''}
-    PLUGIN_VERSION = '1.2.4'
+    PLUGIN_VERSION = '1.2.5-beta.2'
     DSS_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
     GSPREAD_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -124,3 +124,19 @@ def convert_dates_in_row(row, date_columns):
         row[date_column] = format_date(
             row[date_column], DSSConstants.DSS_DATE_FORMAT, DSSConstants.GSPREAD_DATE_FORMAT)
     return row
+
+
+def assert_not_forbidden_dataset_type(dataset, forbiden_type, forbiden_name, plugin_name):
+    try:
+        dataset_config = dataset.get_config()
+    except Exception:
+        return
+    if dataset_config:
+        target_dataset_type = dataset_config.get("type")
+        target_dataset_name = dataset_config.get("params", {}).get("customConfig", {}).get("doc_id")
+        if target_dataset_type == forbiden_type and target_dataset_name == forbiden_name:
+            raise Exception(
+                "This append recipe outputs to the {} dataset. This is likely to be an error, please refer to the documentation.".format(
+                    plugin_name
+                )
+            )
