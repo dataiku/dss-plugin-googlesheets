@@ -5,7 +5,7 @@ from dataiku.customrecipe import get_input_names_for_role, get_output_names_for_
 from googlesheets import GoogleSheetsSession
 from gspread.utils import rowcol_to_a1
 from safe_logger import SafeLogger
-from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids
+from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids, assert_not_forbidden_dataset_type
 from time import sleep
 from googlesheets_append import append_rows
 
@@ -23,14 +23,16 @@ input_schema = input_dataset.read_schema()
 # Output
 output_name = get_output_names_for_role('output_role')[0]
 output_dataset = dataiku.Dataset(output_name)
-output_dataset.write_schema(input_schema)
-
-
-# Get configuration
 config = get_recipe_config()
 logger.info("config parameters: {}".format(logger.filter_secrets(config)))
-credentials, credentials_type = extract_credentials(config)
 doc_id = config.get("doc_id")
+
+# This recipe principle is often misunderstood and many users output it to the dataset that they mean to append to
+# We check that this is not the case here and if so fail with error message pointing to the doc
+assert_not_forbidden_dataset_type(output_dataset, "CustomPython_googlesheets-sheet", doc_id, "Google Sheet")
+output_dataset.write_schema(input_schema)
+
+credentials, credentials_type = extract_credentials(config)
 if not doc_id:
     raise ValueError("The document id is not provided")
 tabs_ids = get_tab_ids(config)
