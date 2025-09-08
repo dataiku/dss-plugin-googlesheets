@@ -48,8 +48,7 @@ except Exception as error_message:
 local_last_modified_pretty = time.strftime('%Y-%m-%d %H:%M:%S%z', time.gmtime(last_modified/1000))
 remote_last_modified_pretty = time.strftime('%Y-%m-%d %H:%M:%S%z', time.gmtime(remote_file_last_modified_epoch/1000))
 
-logger.info("Trigger.{}.lastLocalTime: {} ({})".format(project_variable_name, last_modified, local_last_modified_pretty))
-logger.info("Trigger.{}.remoteTime: {} ({})".format(project_variable_name, remote_file_last_modified_epoch, remote_last_modified_pretty))
+logger.info("Trigger.{}.lastLocalTime: {} ({}) versus remoteTime: {} ({})".format(project_variable_name, last_modified, local_last_modified_pretty, remote_file_last_modified_epoch, remote_last_modified_pretty))
 if remote_file_last_modified_epoch > last_modified:
     logger.info("remote epoch {} > local epoch {}, firing the trigger".format(remote_file_last_modified_epoch, last_modified))
     remote_file_last_modified_epoch = int(time.time()) * 1000
