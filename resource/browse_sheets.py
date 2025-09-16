@@ -38,6 +38,7 @@ def do(payload, config, plugin_config, inputs):
         except Exception as error_message:
             return build_select_choices("{}".format(error_message))
         choices = []
+        choices.append({"label": "✍️ Enter manually", "value": "__dku_manual_select"})
         for worksheet in worksheets:
             worksheet_title = "{}".format(worksheet.title)
             choices.append({
