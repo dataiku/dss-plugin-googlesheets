@@ -95,17 +95,17 @@
             "defaultValue": "append"
         },
         {
-            "name": "tab_id",
-            "label": "Sheet name (legacy)",
-            "description": "Legacy, please prefer using the \"Sheet name\" selector below",
-            "type": "STRING",
-            "visibilityCondition": "model.show_advanced_parameters==true || (model.tabs_ids==null && model.tab_id!=null && model.tab_id!='')"
-        },
-        {
             "name": "tabs_ids",
             "label": "Sheet name",
             "type": "SELECT",
             "getChoicesFromPython": true
+        },
+        {
+            "name": "tab_id",
+            "label": "Sheet name",
+            "description": "",
+            "type": "STRING",
+            "visibilityCondition": "model.show_advanced_parameters==true || (model.tabs_ids==null && model.tab_id!=null && model.tab_id!='') || (model.tabs_ids=='__dku_manual_select')"
         },
         {
             "name": "insert_format",

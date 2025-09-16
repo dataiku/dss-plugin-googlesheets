@@ -57,6 +57,8 @@ def get_tab_ids(config):
     legacy_tab_id = config.get("tab_id", None)
     tabs_ids = config.get("tabs_ids")
     tabs_ids = tabs_ids or []
+    if tabs_ids == "__dku_manual_select":
+        return [legacy_tab_id]
     if type(tabs_ids) == str:
         tabs_ids = [tabs_ids]
     if not tabs_ids:
