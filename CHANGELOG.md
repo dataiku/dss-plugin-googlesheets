@@ -1,5 +1,10 @@
 # Changelog
 
+## [Version 1.3.0](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.3.0) - Feature - 2025-09-16
+
+- Add a manual input for the sheet name
+- Create new sheet if the sheet name does not exist in the document
+
 ## [Version 1.2.5](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.5) - Feature - 2025-02-17
 
 - Add a scenario step to check on Google Sheets document update based on its by id
