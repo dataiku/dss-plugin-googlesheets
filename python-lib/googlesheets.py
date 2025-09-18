@@ -53,6 +53,12 @@ class GoogleSheetsSession():
             )
             self.email = "(email missing)"
 
+    def get_documents_by_title(self, document_title):
+        return self.client.openall(title=document_title)
+
+    def create_new_document(self, document_title):
+        return self.client.create(document_title)
+
     def get_spreadsheet(self, document_id, tab_id):
         return self.get_spreadsheets(document_id, tab_id)[0]
 

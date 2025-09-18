@@ -18,11 +18,32 @@ config = get_recipe_config()
 logger.info("config parameters: {}".format(logger.filter_secrets(config)))
 
 doc_id = config.get("doc_id")
-if not doc_id:
+document_name = config.get("document_name")
+if not doc_id and not document_name:
     raise ValueError("The document id is not provided")
 
 credentials, credentials_type = extract_credentials(config)
 session = GoogleSheetsSession(credentials, credentials_type)
+
+if not doc_id:
+    documents = session.get_documents_by_title(document_name)
+    print("ALX:documents={}".format(documents))
+    if len(documents) > 1:
+        logger.error("{} documents with the name {} are found".format(len(documents), document_name))
+        raise Exception("There are {} documents named '{}'. Choose a unique name or use document id instead of title.".format(
+            len(documents),
+            document_name
+        ))
+    elif not documents:
+        logger.info("No document named '{}' was found. Creating it now.".format(document_name))
+        document = session.create_new_document(document_name)
+        doc_id = document.id
+        logger.info("New document id is {}".format(doc_id))
+    else:
+        logger.info("One document was found")
+        doc_id = documents[0].id
+        logger.info("Document's id: {}".format(doc_id))
+
 insert_format = config.get("insert_format", "USER_ENTERED")
 write_mode = config.get("write_mode", "append")
 batch_size = config.get("batch_size", 200)

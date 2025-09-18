@@ -71,11 +71,16 @@
             "visibilityCondition": "model.auth_type == 'single-sign-on'"
         },
         {
+            "name": "document_name",
+            "label": "Document name",
+            "description": "Must be unique, ignored if document id is set",
+            "type": "STRING"
+        },
+        {
             "name": "doc_id",
             "label": "Document id",
             "description": "Can be extracted from the spreadsheet's URL",
-            "type": "STRING",
-            "mandatory" : true
+            "type": "STRING"
         },
         {
             "name": "write_mode",
@@ -97,7 +102,7 @@
         },
         {
             "name": "tabs_mapping",
-            "label": "Sheet mapping",
+            "label": "Dataset / Sheet mapping",
             "type": "OBJECT_LIST",
             "subParams": [
                 {
