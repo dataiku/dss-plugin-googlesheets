@@ -128,7 +128,7 @@
                     "label": "Format numbers, dates, or currencies in the spreadsheet"
                 }
             ],
-            "mandatory": true,
+            "visibilityCondition": false,
             "defaultValue": "USER_ENTERED"
         },
         {
