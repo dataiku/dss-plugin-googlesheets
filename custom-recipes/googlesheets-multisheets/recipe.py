@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 import datetime
 import dataiku
-from dataiku.customrecipe import get_output_names_for_role, get_recipe_config
+from dataiku.customrecipe import get_recipe_config
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
-from googlesheets_common import DSSConstants, extract_credentials, assert_not_forbidden_dataset_type
+from googlesheets_common import DSSConstants, extract_credentials
 from time import sleep
 from googlesheets_append import append_rows
 
@@ -13,9 +13,6 @@ logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
 
 logger.info("GoogleSheets multisheets v{} starting".format(DSSConstants.PLUGIN_VERSION))
 
-output_name = get_output_names_for_role('output_role')[0]
-output_dataset = dataiku.Dataset(output_name)
-
 config = get_recipe_config()
 
 logger.info("config parameters: {}".format(logger.filter_secrets(config)))
@@ -23,9 +20,6 @@ logger.info("config parameters: {}".format(logger.filter_secrets(config)))
 doc_id = config.get("doc_id")
 if not doc_id:
     raise ValueError("The document id is not provided")
-# This recipe principle is often misunderstood and many users output it to the dataset that they mean to append to
-# We check that this is not the case here and if so fail with error message pointing to the doc
-assert_not_forbidden_dataset_type(output_dataset, "CustomPython_googlesheets-sheet", doc_id, "Google Sheet")
 
 credentials, credentials_type = extract_credentials(config)
 session = GoogleSheetsSession(credentials, credentials_type)
@@ -43,8 +37,6 @@ for tab_mapping in tabs_mapping:
     tab_id = tab_mapping.get("output_sheet_name")
     if not tab_id:
         raise ValueError("The sheet name is not provided")
-
-    output_dataset.write_schema(input_schema)
 
     # Load worksheet
     worksheet = session.get_spreadsheet(doc_id, tab_id)
@@ -67,9 +59,6 @@ for tab_mapping in tabs_mapping:
     else:
         serializer = serializer_iso
 
-    # Open writer
-    writer = output_dataset.get_writer()
-
     # Iteration row by row
     batch = []
     if write_mode == "overwrite":
@@ -87,11 +76,5 @@ for tab_mapping in tabs_mapping:
             worksheet.append_rows(batch, insert_format)
             batch = []
 
-        # write to output dataset
-        writer.write_row_dict(row)
-
     if len(batch) > 0:
         worksheet.append_rows(batch, insert_format)
-
-    # Close writer
-    writer.close()
