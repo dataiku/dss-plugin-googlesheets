@@ -15,6 +15,7 @@ logger.info("GoogleSheets multisheets v{} starting".format(DSSConstants.PLUGIN_V
 
 output_name = get_output_names_for_role('output_role')[0]
 output_dataset = dataiku.Dataset(output_name)
+
 config = get_recipe_config()
 
 logger.info("config parameters: {}".format(logger.filter_secrets(config)))
@@ -22,6 +23,9 @@ logger.info("config parameters: {}".format(logger.filter_secrets(config)))
 doc_id = config.get("doc_id")
 if not doc_id:
     raise ValueError("The document id is not provided")
+# This recipe principle is often misunderstood and many users output it to the dataset that they mean to append to
+# We check that this is not the case here and if so fail with error message pointing to the doc
+assert_not_forbidden_dataset_type(output_dataset, "CustomPython_googlesheets-sheet", doc_id, "Google Sheet")
 
 credentials, credentials_type = extract_credentials(config)
 session = GoogleSheetsSession(credentials, credentials_type)
@@ -40,9 +44,6 @@ for tab_mapping in tabs_mapping:
     if not tab_id:
         raise ValueError("The sheet name is not provided")
 
-    # This recipe principle is often misunderstood and many users output it to the dataset that they mean to append to
-    # We check that this is not the case here and if so fail with error message pointing to the doc
-    assert_not_forbidden_dataset_type(output_dataset, "CustomPython_googlesheets-sheet", doc_id, "Google Sheet")
     output_dataset.write_schema(input_schema)
 
     # Load worksheet
