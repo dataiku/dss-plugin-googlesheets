@@ -1,9 +1,10 @@
 # Changelog
 
-## [Version 1.3.0](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.3.0) - Feature - 2025-09-16
+## [Version 1.3.0](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.3.0) - Feature - 2025-09-18
 
 - Add a manual input for the sheet name
 - Create new sheet if the sheet name does not exist in the document
+- Add new multisheet append recipe
 
 ## [Version 1.2.5](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.2.5) - Feature - 2025-02-17
 
