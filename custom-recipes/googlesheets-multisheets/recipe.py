@@ -23,7 +23,7 @@ if not doc_id:
 
 credentials, credentials_type = extract_credentials(config)
 session = GoogleSheetsSession(credentials, credentials_type)
-insert_format = config.get("insert_format")
+insert_format = config.get("insert_format", "USER_ENTERED")
 write_mode = config.get("write_mode", "append")
 batch_size = config.get("batch_size", 200)
 insertion_delay = config.get("insertion_delay", 0)
