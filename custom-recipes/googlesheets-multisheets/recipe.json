@@ -1,0 +1,162 @@
+{
+    "meta": {
+        "label": "Google Sheets - Multisheet writer",
+        "description": "Writes / appends the rows of the input dataset to a multiple sheets of a Google Sheets document"
+    },
+
+    "kind": "PYTHON",
+    "paramsPythonSetup": "browse_sheets.py",
+    "selectableFromDataset": "input_role",
+
+    "inputRoles": [
+        {
+            "name": "input_role",
+            "label": "Dataset containing rows to append to the spreadsheet",
+            "arity": "NARY",
+            "required": true,
+            "acceptsDataset": true
+        }
+    ],
+
+    "outputRoles": [
+        {
+            "name": "output_role",
+            "label": "Dataset with a copy of the appended rows",
+            "arity": "UNARY",
+            "required": false,
+            "acceptsDataset": true
+        }
+    ],
+
+    "params": [
+        {
+            "name": "auth_type",
+            "label": "Type of authentication",
+            "type": "SELECT",
+            "selectChoices": [
+                {
+                    "value": "single-sign-on",
+                    "label": "Single Sign On"
+                },
+                {
+                    "value": "preset-service-account",
+                    "label": "Service account preset"
+                },
+                {
+                    "value": "legacy-service-account",
+                    "label": "Service account credentials (legacy)"
+                }
+            ]
+        },
+        {
+            "name": "credentials",
+            "label": "Service Account credentials",
+            "description": "Copy/paste the JSON private key provided by Google, or a path to a file containing the key. Click on the link above above to read how to get it.",
+            "type": "TEXTAREA",
+            "visibilityCondition": "model.auth_type == 'legacy-service-account' || (model.auth_type == null && model.credentials!=null)"
+        },
+        {
+            "name": "preset_credentials_service_account",
+            "label": "Service account preset",
+            "type": "PRESET",
+            "parameterSetId": "service-account",
+            "visibilityCondition": "model.auth_type == 'preset-service-account'"
+        },
+        {
+            "name": "oauth_credentials",
+            "label": "Single Sign On",
+            "type": "PRESET",
+            "parameterSetId": "single-sign-on",
+            "visibilityCondition": "model.auth_type == 'single-sign-on'"
+        },
+        {
+            "name": "doc_id",
+            "label": "Document id",
+            "description": "Can be extracted from the spreadsheet's URL",
+            "type": "STRING",
+            "mandatory" : true
+        },
+        {
+            "name": "write_mode",
+            "label": "Write mode",
+            "description": " ",
+            "type": "SELECT",
+            "selectChoices": [
+                {
+                    "value": "append",
+                    "label": "Append to the sheet"
+                },
+                {
+                    "value": "overwrite",
+                    "label": "Overwrite the sheet"
+                }
+            ],
+            "mandatory": true,
+            "defaultValue": "append"
+        },
+        {
+            "name": "tabs_mapping",
+            "label": "Sheet mapping",
+            "type": "OBJECT_LIST",
+            "subParams": [
+                {
+                    "name": "input_dataset",
+                    "label": "Input dataset",
+                    "type": "SELECT",
+                    "getChoicesFromPython": true
+                },
+                {
+                    "name": "output_sheet_name",
+                    "label": "Sheet name",
+                    "type": "STRING"
+                }
+            ]
+        },
+        {
+            "name": "insert_format",
+            "label": "Values interpretation",
+            "description": "How data is interpretated by the spreadsheet",
+            "type": "SELECT",
+            "selectChoices": [
+                {
+                    "value": "RAW",
+                    "label": "Raw: store as is"
+                },
+                {
+                    "value": "USER_ENTERED",
+                    "label": "Format numbers, dates, or currencies in the spreadsheet"
+                }
+            ],
+            "mandatory": true,
+            "defaultValue": "USER_ENTERED"
+        },
+        {
+            "name": "show_advanced_parameters",
+            "label": "Show advanced parameters",
+            "description": "",
+            "type": "BOOLEAN",
+            "defaultValue": false
+        },
+        {
+            "name": "batch_size",
+            "label": "Batch size",
+            "description": "Number of rows inserted in the dataframe at once. The bigger, the less API calls and the quickest pipeline, but putting too big a value could lead to out of memory errors, especially if there is a high number of columns.",
+            "type": "INT",
+            "visibilityCondition": "model.show_advanced_parameters==true",
+            "defaultValue": 200,
+            "minI": 1
+        },
+        {
+            "name": "insertion_delay",
+            "label": "Insertion delay (in ms)",
+            "description": "In milliseconds. Wait time between each API call to Google Sheets. If you are experiencing issues with API call limits, try increasing it to 10 or 20 ms, since there is a 60 write-per-minute limit on users (https://developers.google.com/sheets/api/limits). Warning: it will slow down your pipeline.",
+            "type": "INT",
+            "visibilityCondition": "model.show_advanced_parameters==true",
+            "defaultValue": 0,
+            "minI": 0
+        }
+    ],
+
+    "resourceKeys": []
+
+}
