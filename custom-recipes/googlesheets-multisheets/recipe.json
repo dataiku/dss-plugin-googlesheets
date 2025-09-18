@@ -24,7 +24,8 @@
             "label": "Dataset with a copy of the appended rows",
             "arity": "UNARY",
             "required": false,
-            "acceptsDataset": true
+            "acceptsDataset": false,
+            "acceptsManagedFolder": true
         }
     ],
 
