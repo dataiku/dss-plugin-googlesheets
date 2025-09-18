@@ -21,12 +21,24 @@ def build_select_choices(choices=None):
 def do(payload, config, plugin_config, inputs):
     if "config" in config:
         config = config.get("config")
+    
+    parameter_name = payload.get('parameterName')
+    
+    if parameter_name == "input_dataset":
+        choices = []
+        for input in inputs:
+            if input.get("type") == "DATASET" and input.get("role") == "input_role":
+                choices.append({
+                    "label": input.get("fullName").split(".")[-1],
+                    "value": input.get("fullName")
+                })
+        return build_select_choices(choices)
+    
     if ("auth_type" not in config) and ("credentials" not in config):
         return build_select_choices("Select a type of authentication")
     credentials, credentials_type, error_message = extract_credentials(config, can_raise=False)
     if error_message:
         return build_select_choices(error_message)
-    parameter_name = payload.get('parameterName')
     root_model = payload.get("rootModel", {})
     doc_id = root_model.get('doc_id')
     if not doc_id:
