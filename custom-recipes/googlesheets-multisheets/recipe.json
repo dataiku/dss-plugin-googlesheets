@@ -83,6 +83,12 @@
             "type": "STRING"
         },
         {
+            "name": "folder_id",
+            "label": "Folder id",
+            "description": "Can be extracted from the folder's URL",
+            "type": "STRING"
+        },
+        {
             "name": "write_mode",
             "label": "Write mode",
             "description": " ",
