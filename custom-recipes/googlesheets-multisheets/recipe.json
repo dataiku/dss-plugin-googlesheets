@@ -74,7 +74,8 @@
             "name": "document_name",
             "label": "Document name",
             "description": "Must be unique, ignored if document id is set",
-            "type": "STRING"
+            "type": "STRING",
+            "visibilityCondition": false
         },
         {
             "name": "doc_id",
@@ -86,7 +87,8 @@
             "name": "folder_id",
             "label": "Folder id",
             "description": "Can be extracted from the folder's URL",
-            "type": "STRING"
+            "type": "STRING",
+            "visibilityCondition": false
         },
         {
             "name": "write_mode",
