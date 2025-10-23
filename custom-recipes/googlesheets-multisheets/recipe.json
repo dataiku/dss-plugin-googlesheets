@@ -129,7 +129,7 @@
         {
             "name": "insert_format",
             "label": "Values interpretation",
-            "description": "How data is interpretated by the spreadsheet",
+            "description": "How data is interpreted by the spreadsheet",
             "type": "SELECT",
             "selectChoices": [
                 {
