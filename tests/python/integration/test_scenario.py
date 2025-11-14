@@ -17,3 +17,7 @@ def test_run_googlesheets_download_multisheet_classic(user_dss_clients):
 
 def test_run_googlesheets_one_sheet_from_multisheet(user_dss_clients):
     dss_scenario.run(user_dss_clients, project_key=TEST_PROJECT_KEY, scenario_id="ONE_SHEET_FROM_MULTISHEET")
+
+
+def test_run_googlesheets_multisheet_append_recipe(user_dss_clients):
+    dss_scenario.run(user_dss_clients, project_key=TEST_PROJECT_KEY, scenario_id="MULTISHEET_APPEND_RECIPE")
