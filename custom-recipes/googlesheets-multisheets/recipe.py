@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import dataiku
-from dataiku.customrecipe import get_recipe_config
+from dataiku.customrecipe import get_recipe_config, get_input_names_for_role
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
 from googlesheets_common import DSSConstants, extract_credentials
@@ -12,6 +12,15 @@ from googlesheets_append import append_rows
 logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
 
 logger.info("GoogleSheets multisheets v{} starting".format(DSSConstants.PLUGIN_VERSION))
+
+
+def fetch_mapped_sheet_name(dataset_name):
+    for tab_mapping in tabs_mapping:
+        tab_dataset_name = tab_mapping.get("input_dataset")
+        if tab_dataset_name == dataset_name:
+            return tab_mapping.get("output_sheet_name")
+    return None
+
 
 config = get_recipe_config()
 
@@ -51,11 +60,15 @@ insertion_delay = config.get("insertion_delay", 0)
 
 tabs_mapping = config.get("tabs_mapping", [])
 
-for tab_mapping in tabs_mapping:
-    input_name = tab_mapping.get("input_dataset")
+input_datasets_names = get_input_names_for_role('input_role')
+
+for input_dataset_name in input_datasets_names:
+    input_name = input_dataset_name
+    tab_id = fetch_mapped_sheet_name(input_dataset_name)
+    if tab_id is None:
+        tab_id = input_dataset_name.split(".")[-1]
     input_dataset = dataiku.Dataset(input_name)
     input_schema = input_dataset.read_schema()
-    tab_id = tab_mapping.get("output_sheet_name")
     if not tab_id:
         raise ValueError("The sheet name is not provided")
 
