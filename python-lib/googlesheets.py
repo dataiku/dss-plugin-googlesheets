@@ -53,6 +53,12 @@ class GoogleSheetsSession():
             )
             self.email = "(email missing)"
 
+    def list_documents_by_title(self, document_title, folder_id=None):
+        return self.client.list_spreadsheet_files(document_title, folder_id=folder_id)
+
+    def create_new_document(self, document_title, folder_id=None):
+        return self.client.create(document_title, folder_id=folder_id)
+
     def get_spreadsheet(self, document_id, tab_id):
         return self.get_spreadsheets(document_id, tab_id)[0]
 
@@ -69,7 +75,12 @@ class GoogleSheetsSession():
             raise Exception("Trying to open non-existent or inaccessible spreadsheet document.")
         except gspread.exceptions.WorksheetNotFound as error:
             logger.error("{}".format(error))
-            raise Exception("Trying to open non-existent sheet. Verify that the sheet name exists (%s)." % tab_id)
+            logger.info("The sheet {} was not found in document {}, trying to create it now".format(tab_id, document_id))
+            try:
+                return [self.client.open_by_key(document_id).add_worksheet(tab_id, 1000, 26)]
+            except Exception as error:
+                logger.error("{}".format(error))
+                raise Exception("The sheet %s could not be created." % tab_id)
         except gspread.exceptions.APIError as error:
             if hasattr(error, 'response'):
                 error_json = error.response.json()

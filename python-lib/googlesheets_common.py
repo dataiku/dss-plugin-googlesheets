@@ -9,7 +9,7 @@ class DSSConstants(object):
         "single-sign-on": "There is a problem with the selected Single Sign On preset"
     }
     DEFAULT_DATASET_FORMAT = {'separator': '\t', 'style': 'unix', 'compress': ''}
-    PLUGIN_VERSION = '1.2.5-beta.2'
+    PLUGIN_VERSION = '1.3.0-beta.1'
     DSS_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
     GSPREAD_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -57,6 +57,8 @@ def get_tab_ids(config):
     legacy_tab_id = config.get("tab_id", None)
     tabs_ids = config.get("tabs_ids")
     tabs_ids = tabs_ids or []
+    if tabs_ids == "__dku_manual_select":
+        return [legacy_tab_id]
     if type(tabs_ids) == str:
         tabs_ids = [tabs_ids]
     if not tabs_ids:

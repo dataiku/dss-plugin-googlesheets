@@ -1,7 +1,7 @@
 {
     "meta": {
-        "label": "Google Sheets - Write / append to a sheet",
-        "description": "Writes / appends the rows of the input dataset to a Google Sheets document"
+        "label": "Google Sheets - Multisheet writer",
+        "description": "Writes / appends the rows of the input dataset to a multiple sheets of a Google Sheets document"
     },
 
     "kind": "PYTHON",
@@ -12,7 +12,7 @@
         {
             "name": "input_role",
             "label": "Dataset containing rows to append to the spreadsheet",
-            "arity": "UNARY",
+            "arity": "NARY",
             "required": true,
             "acceptsDataset": true
         }
@@ -24,7 +24,8 @@
             "label": "Dataset with a copy of the appended rows",
             "arity": "UNARY",
             "required": false,
-            "acceptsDataset": true
+            "acceptsDataset": false,
+            "acceptsManagedFolder": true
         }
     ],
 
@@ -70,11 +71,24 @@
             "visibilityCondition": "model.auth_type == 'single-sign-on'"
         },
         {
+            "name": "document_name",
+            "label": "Document name",
+            "description": "Must be unique, ignored if document id is set",
+            "type": "STRING",
+            "visibilityCondition": false
+        },
+        {
             "name": "doc_id",
             "label": "Document id",
             "description": "Can be extracted from the spreadsheet's URL",
+            "type": "STRING"
+        },
+        {
+            "name": "folder_id",
+            "label": "Folder id",
+            "description": "Can be extracted from the folder's URL",
             "type": "STRING",
-            "mandatory" : true
+            "visibilityCondition": false
         },
         {
             "name": "write_mode",
@@ -95,17 +109,22 @@
             "defaultValue": "append"
         },
         {
-            "name": "tabs_ids",
-            "label": "Sheet name",
-            "type": "SELECT",
-            "getChoicesFromPython": true
-        },
-        {
-            "name": "tab_id",
-            "label": "Sheet name",
-            "description": "",
-            "type": "STRING",
-            "visibilityCondition": "model.show_advanced_parameters==true || (model.tabs_ids==null && model.tab_id!=null && model.tab_id!='') || (model.tabs_ids=='__dku_manual_select')"
+            "name": "tabs_mapping",
+            "label": "Dataset / Sheet mapping",
+            "type": "OBJECT_LIST",
+            "subParams": [
+                {
+                    "name": "input_dataset",
+                    "label": "Input dataset",
+                    "type": "SELECT",
+                    "getChoicesFromPython": true
+                },
+                {
+                    "name": "output_sheet_name",
+                    "label": "Sheet name",
+                    "type": "STRING"
+                }
+            ]
         },
         {
             "name": "insert_format",
@@ -122,7 +141,7 @@
                     "label": "Format numbers, dates, or currencies in the spreadsheet"
                 }
             ],
-            "mandatory": true,
+            "visibilityCondition": false,
             "defaultValue": "USER_ENTERED"
         },
         {
