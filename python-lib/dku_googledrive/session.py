@@ -38,7 +38,6 @@ class GoogleDriveSession():
     """
     def __init__(self, config, plugin_config):
         scopes = ['https://www.googleapis.com/auth/drive']
-        connection = plugin_config.get("googledrive_connection")
         self.auth_type = config.get("auth_type")
         self.write_as_google_doc = config.get("googledrive_write_as_google_doc")
         self.output_google_sheets_as_xlsx = config.get("output_google_sheets_as_xlsx", False)
@@ -49,7 +48,7 @@ class GoogleDriveSession():
             credentials = AccessTokenCredentials(self.access_token, "dss-googledrive-plugin/2.0")
             http_auth = credentials.authorize(Http())
         else:
-            credentials_dict = eval(connection['preset_credentials_service_account'])
+            credentials_dict = eval(config.get("preset_credentials_service_account", {}).get("credentials", ""))
             credentials = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scopes)
             http_auth = credentials.authorize(Http())
         self.root_id = config.get("googledrive_root_id")
