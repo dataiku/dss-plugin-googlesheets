@@ -9,7 +9,7 @@ class DSSConstants(object):
         "single-sign-on": "There is a problem with the selected Single Sign On preset"
     }
     DEFAULT_DATASET_FORMAT = {'separator': '\t', 'style': 'unix', 'compress': ''}
-    PLUGIN_VERSION = '1.3.0-beta.1'
+    PLUGIN_VERSION = '1.3.1'
     DSS_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
     GSPREAD_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
