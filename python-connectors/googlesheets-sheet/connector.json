@@ -127,6 +127,14 @@
             "mandatory": true,
             "defaultValue": "USER_ENTERED",
             "visibilityCondition": "model.show_advanced_parameters==true"
+        },
+        {
+            "name": "lines_to_skip",
+            "label": "Number of lines to skip",
+            "type": "INT",
+            "mandatory": true,
+            "defaultValue": 0,
+            "visibilityCondition": "model.show_advanced_parameters==true"
         }
     ]
 }

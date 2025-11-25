@@ -23,6 +23,7 @@ class MyConnector(Connector):
         self.tabs_ids = get_tab_ids(config)
         self.result_format = self.config.get("result_format")
         self.write_format = self.config.get("write_format")
+        self.lines_to_skip = self.config.get("lines_to_skip")
         self.list_unique_slugs = []
         self.add_sheet_name_column = self.config.get("add_sheet_name_column", False)
 
@@ -60,7 +61,7 @@ class MyConnector(Connector):
         for worksheet in worksheets:
             if self.tabs_ids and (worksheet.title not in self.tabs_ids):
                 continue
-            rows = worksheet.get_all_values()
+            rows = worksheet.get_all_values()[self.lines_to_skip:]
             try:
                 columns = rows[0]
             except IndexError:
