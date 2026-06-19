@@ -39,18 +39,21 @@ class GoogleSheetsSession():
 
     def __init__(self, credentials, credentials_type="preset-service-account"):
         self.client = None
+        self.credentials = None
         if credentials_type == "service-account":
             credentials = _get_service_account_credentials(credentials)
+            self.credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+                credentials,
+                self.scope
+            )
             self.client = gspread.authorize(
-                ServiceAccountCredentials.from_json_keyfile_dict(
-                    credentials,
-                    self.scope
-                )
+                self.credentials
             )
             self.email = credentials.get("client_email", "(email missing)")
         else:
+            self.credentials = AccessTokenCredentials(credentials, "dss-googledrive-plugin/2.0")
             self.client = gspread.authorize(
-                AccessTokenCredentials(credentials, "dss-googledrive-plugin/2.0")
+                self.credentials
             )
             self.email = "(email missing)"
 
@@ -61,7 +64,7 @@ class GoogleSheetsSession():
         return self.client.create(document_title, folder_id=folder_id)
 
     def _get_sheets_service(self):
-        return build("sheets", "v4", credentials=self.client.auth, cache_discovery=False)
+        return build("sheets", "v4", credentials=self.credentials, cache_discovery=False)
 
     def _extract_cell_display_value(self, cell):
         if not cell:
