@@ -1,6 +1,7 @@
 import json
 import os.path
 import gspread
+from googleapiclient.discovery import build
 from oauth2client.service_account import ServiceAccountCredentials
 from oauth2client.client import AccessTokenCredentials
 from safe_logger import SafeLogger
@@ -58,6 +59,49 @@ class GoogleSheetsSession():
 
     def create_new_document(self, document_title, folder_id=None):
         return self.client.create(document_title, folder_id=folder_id)
+
+    def _get_sheets_service(self):
+        return build("sheets", "v4", credentials=self.client.auth, cache_discovery=False)
+
+    def _extract_cell_display_value(self, cell):
+        if not cell:
+            return ""
+
+        if cell.get("hyperlink"):
+            return cell["hyperlink"]
+
+        for text_run in cell.get("textFormatRuns", []):
+            uri = text_run.get("format", {}).get("link", {}).get("uri")
+            if uri:
+                return uri
+
+        uri = cell.get("userEnteredFormat", {}).get("textFormat", {}).get("link", {}).get("uri")
+        if uri:
+            return uri
+
+        return cell.get("formattedValue", "")
+
+    def get_spreadsheet_values(self, document_id, worksheet):
+        service = self._get_sheets_service()
+        response = service.spreadsheets().get(
+            spreadsheetId=document_id,
+            ranges=[worksheet.title],
+            includeGridData=True,
+            fields="sheets(data(rowData(values(formattedValue,hyperlink,textFormatRuns,userEnteredFormat(textFormat(link))))))"
+        ).execute()
+
+        rows = []
+        sheet_rows = response.get("sheets", [{}])[0].get("data", [{}])[0].get("rowData", [])
+        for sheet_row in sheet_rows:
+            row = [self._extract_cell_display_value(cell) for cell in sheet_row.get("values", [])]
+            while row and row[-1] == "":
+                row.pop()
+            rows.append(row)
+
+        while rows and len(rows[-1]) == 0:
+            rows.pop()
+
+        return rows
 
     def get_spreadsheet(self, document_id, tab_id):
         return self.get_spreadsheets(document_id, tab_id)[0]
