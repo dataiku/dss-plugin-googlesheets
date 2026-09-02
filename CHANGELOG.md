@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.4.0 - Enhancement release - 2026-09-02
+
+- Added supported Python versions: 3.11, 3.12, 3.13, 3.14
+- Makefile cleanup: release_info.json lines removed
+
 ## [Version 1.3.1](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.3.1) - Bugfix - 2025-11-25
 
 - Fix the usage of the trigger with a service account preset
