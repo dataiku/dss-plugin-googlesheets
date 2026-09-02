@@ -60,7 +60,7 @@ class MyConnector(Connector):
         for worksheet in worksheets:
             if self.tabs_ids and (worksheet.title not in self.tabs_ids):
                 continue
-            rows = worksheet.get_all_values()
+            rows = self.session.get_spreadsheet_values(self.doc_id, worksheet)
             try:
                 columns = rows[0]
             except IndexError:
