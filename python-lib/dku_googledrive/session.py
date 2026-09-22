@@ -48,7 +48,9 @@ class GoogleDriveSession():
             credentials = AccessTokenCredentials(self.access_token, "dss-googledrive-plugin/2.0")
             http_auth = credentials.authorize(Http())
         else:
-            credentials_dict = eval(config.get("preset_credentials_service_account", {}).get("credentials", ""))
+            credentials_dict = json.loads(config.get("preset_credentials_service_account", {}).get("credentials", ""))
+            if not isinstance(credentials_dict, dict):
+                raise GoogleDriveSessionError("Service account credentials must be a JSON object")
             credentials = ServiceAccountCredentials.from_json_keyfile_dict(credentials_dict, scopes)
             http_auth = credentials.authorize(Http())
         self.root_id = config.get("googledrive_root_id")
