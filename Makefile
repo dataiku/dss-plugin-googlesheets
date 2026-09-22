@@ -29,8 +29,9 @@ unit-tests:
 		pip3 install --no-cache-dir -r code-env/python/spec/requirements.txt; \
 		export PYTHONPATH="$(PYTHONPATH):$(PWD)/python-lib"; \
 		export RESOURCE_FOLDER_PATH="$(PWD)/resource"; \
-		pytest tests/python/unit --alluredir=tests/allure_report; \
+		pytest tests/python/unit --alluredir=tests/allure_report || ret=$$?; \
 		deactivate; \
+		exit $${ret:-0}; \
 	)
 	@echo "[SUCCESS] Running unit tests: Done!"
 
