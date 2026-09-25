@@ -1,8 +1,13 @@
 # Changelog
 
-## [Version 1.3.2](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.3.2) - Bugfix - 2026-09-25
+## [Version 1.4.1](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.4.1) - Bugfix - 2026-09-25
 
 - Fix security issue when parsing the access token on scenario's trigger
+
+## Version 1.4.0 - Enhancement release - 2026-09-02
+
+- Added supported Python versions: 3.11, 3.12, 3.13, 3.14
+- Makefile cleanup: release_info.json lines removed
 
 ## [Version 1.3.1](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.3.1) - Bugfix - 2025-11-25
 
