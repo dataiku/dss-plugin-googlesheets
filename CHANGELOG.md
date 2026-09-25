@@ -1,5 +1,9 @@
 # Changelog
 
+## [Version 1.3.2](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.3.2) - Bugfix - 2026-09-25
+
+- Fix security issue when parsing the access token on scenario's trigger
+
 ## [Version 1.3.1](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.3.1) - Bugfix - 2025-11-25
 
 - Fix the usage of the trigger with a service account preset
