@@ -8,13 +8,11 @@
     "icon": "icon-file-text",
     "licenseInfo": "Apache Software License version 2",
     "url": "https://www.dataiku.com/product/plugins/googlesheets/",
-    "category": "Connect",
+    "category": "Productivity",
     "tags": [
       "Google",
-      "Data source",
-      "Export",
-      "Recipe",
-      "Dataset"
+      "Connector",
+      "Productivity"
     ]
   }
 }
