@@ -1,0 +1,12 @@
+- Use this dataset to read Google Sheets tabs into the Flow or to write to a single sheet as the output of a DSS recipe.
+- For `auth_type="single-sign-on"`, select an accessible `oauth_credentials` preset from the `single-sign-on` parameter set.
+- For `auth_type="preset-service-account"`, select `preset_credentials_service_account` from the `service-account` parameter set.
+- The authenticated account needs read access for reading and edit access for writing; share the spreadsheet with the service-account email when using a service account. If authentication setup is incomplete, ask the user to finish it in DSS. Configure legacy `credentials` in DSS settings rather than requesting private keys in the conversation.
+- Set `doc_id` to the spreadsheet ID between `/d/` and `/edit` in its Google Sheets URL.
+- Set `tabs_ids` to a list of exact tab names, such as `["Sales"]`, rather than numeric `gid` values. If the selector is unavailable, use names supplied by the user; do not invent tab names.
+- To read all tabs, leave `tabs_ids` empty and clear any legacy `tab_id`, which otherwise acts as a fallback. Set `add_sheet_name_column=true` only when the user requests the originating tab name.
+- For reading, `result_format="first-row-header"` uses normalized, unique column headers; inspect the resulting schema before referencing columns. `result_format="no-header"` uses numbered columns, and `result_format="json"` returns each row as a JSON array string in the `json` column.
+- For writing, select exactly one tab and use `result_format="first-row-header"` for ordinary table exports. JSON format is read-only. A missing target tab can be created during writing.
+- Configure append or overwrite on the producing DSS recipe; this dataset has no `write_mode` parameter. With `first-row-header`, append preserves existing headers and adds data rows; overwrite resizes the tab and writes headers and data.
+- For a confirmed new tab, use the producing recipe's overwrite mode to include headers unless the user explicitly requests append. For an existing tab, clarify ambiguous write intent before overwriting; adding headers alone does not justify clearing existing data.
+- `write_format="RAW"` stores values as supplied; `write_format="USER_ENTERED"` lets Google Sheets interpret numbers, dates, and formulas.

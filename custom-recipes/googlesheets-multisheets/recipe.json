@@ -4,6 +4,10 @@
         "description": "Writes / appends the rows of the input dataset to a multiple sheets of a Google Sheets document"
     },
 
+    "cobuild": {
+        "supported": true
+    },
+
     "kind": "PYTHON",
     "paramsPythonSetup": "browse_sheets.py",
     "selectableFromDataset": "input_role",
