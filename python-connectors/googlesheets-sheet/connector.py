@@ -170,7 +170,6 @@ class OverwriteDatasetWriter(MyCustomDatasetWriter):
     def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id):
         MyCustomDatasetWriter.__init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id)
         self.rows_written = 0
-        self.overwrite_initialized = False
         columns = [column["name"] for column in dataset_schema["columns"]]
         self.num_columns = max(1, len(columns))
         if parent.result_format == 'first-row-header':
@@ -180,20 +179,30 @@ class OverwriteDatasetWriter(MyCustomDatasetWriter):
                 self.flush()
 
     def flush(self):
-        if not self.buffer and self.overwrite_initialized:
+        if not self.buffer:
             return
         logger.info("Flushing {} rows to Google Sheets in overwrite mode".format(len(self.buffer)))
         worksheet = self.get_or_load_worksheet()
         num_lines = self.rows_written + len(self.buffer)
-        worksheet.resize(rows=max(1, num_lines), cols=self.num_columns)
-        if self.buffer:
-            cell_range = '%s:%s' % (
-                rowcol_to_a1(self.rows_written + 1, 1),
-                rowcol_to_a1(num_lines, self.num_columns)
+        # Preserve existing rows and columns until the final output size is known.
+        if num_lines > worksheet.row_count or self.num_columns > worksheet.col_count:
+            worksheet.resize(
+                rows=max(worksheet.row_count, num_lines),
+                cols=max(worksheet.col_count, self.num_columns)
             )
-            worksheet.update(cell_range, self.buffer, value_input_option=self.parent.write_format)
-        else:
-            worksheet.clear()
-        self.overwrite_initialized = True
+        cell_range = '%s:%s' % (
+            rowcol_to_a1(self.rows_written + 1, 1),
+            rowcol_to_a1(num_lines, self.num_columns)
+        )
+        worksheet.update(cell_range, self.buffer, value_input_option=self.parent.write_format)
         self.rows_written += len(self.buffer)
         self.buffer = []
+
+    def close(self):
+        self.flush()
+        worksheet = self.get_or_load_worksheet()
+        num_lines = max(1, self.rows_written)
+        if worksheet.row_count != num_lines or worksheet.col_count != self.num_columns:
+            worksheet.resize(rows=num_lines, cols=self.num_columns)
+        if self.rows_written == 0:
+            worksheet.clear()
