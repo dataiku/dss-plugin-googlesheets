@@ -106,7 +106,14 @@ class MyConnector(Connector):
         if len(self.tabs_ids) > 1:
             raise Exception('Only one target sheet can be selected for writing')
 
-        return MyCustomDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id, write_mode)
+        if write_mode == "APPEND":
+            writer_class = AppendDatasetWriter
+        elif write_mode == "OVERWRITE":
+            writer_class = OverwriteDatasetWriter
+        else:
+            raise ValueError("Unsupported write mode: {}".format(write_mode))
+
+        return writer_class(self.config, self, dataset_schema, dataset_partitioning, partition_id)
 
     def get_records_count(self, partitioning=None, partition_id=None):
         """
@@ -118,45 +125,77 @@ class MyConnector(Connector):
 
 
 class MyCustomDatasetWriter(CustomDatasetWriter):
-    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id, write_mode):
+    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id):
         CustomDatasetWriter.__init__(self)
         self.parent = parent
         self.config = config
         self.dataset_schema = dataset_schema
         self.dataset_partitioning = dataset_partitioning
         self.partition_id = partition_id
-        self.write_mode = write_mode
+        self.batch_size = config.get("batch_size", 200)
+        if self.batch_size < 1:
+            raise ValueError("Batch size must be at least 1")
+        self.worksheet = None
         self.buffer = []
         self.date_columns = []
         if self.parent.write_format == "USER_ENTERED":
             self.date_columns = mark_date_columns(dataset_schema)
             logger.info("Columns #{} are marked for date conversion".format(self.date_columns))
-        columns = [column["name"] for column in dataset_schema["columns"]]
-        if parent.result_format == 'first-row-header':
-            self.buffer.append(columns)
 
     def write_row(self, row):
         if self.date_columns:
             row = convert_dates_in_row(row, self.date_columns)
         self.buffer.append(row)
+        if len(self.buffer) >= self.batch_size:
+            self.flush()
 
-    def flush(self):
-        worksheet = self.parent.session.get_spreadsheet(self.parent.doc_id, self.parent.tabs_ids[0])
-        worksheet.append_rows = append_rows.__get__(worksheet, worksheet.__class__)
-
-        if self.write_mode == "APPEND":
-            worksheet.append_rows(self.buffer[1:], self.parent.write_format) #TODO: batch ?
-        elif self.write_mode == "OVERWRITE":
-            num_columns = len(self.buffer[0])
-            num_lines = len(self.buffer)
-
-            worksheet.resize(rows=num_lines, cols=num_columns)
-
-            range = 'A1:%s' % rowcol_to_a1(num_lines, num_columns)
-            worksheet.update(range, self.buffer, value_input_option=self.parent.write_format)
-
-        self.buffer = []
+    def get_or_load_worksheet(self):
+        """Load the worksheet on first use and reuse it for subsequent batches."""
+        if self.worksheet is None:
+            self.worksheet = self.parent.session.get_spreadsheet(self.parent.doc_id, self.parent.tabs_ids[0])
+        return self.worksheet
 
     def close(self):
         self.flush()
-        pass
+
+
+class AppendDatasetWriter(MyCustomDatasetWriter):
+    def flush(self):
+        if not self.buffer:
+            return
+        logger.info("Flushing {} rows to Google Sheets in append mode".format(len(self.buffer)))
+        append_rows(self.get_or_load_worksheet(), self.buffer, self.parent.write_format)
+        self.buffer = []
+
+
+class OverwriteDatasetWriter(MyCustomDatasetWriter):
+    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id):
+        MyCustomDatasetWriter.__init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id)
+        self.rows_written = 0
+        self.overwrite_initialized = False
+        columns = [column["name"] for column in dataset_schema["columns"]]
+        self.num_columns = max(1, len(columns))
+        if parent.result_format == 'first-row-header':
+            self.buffer.append(columns)
+            # The header fills the batch when batch size is set to 1.
+            if len(self.buffer) >= self.batch_size:
+                self.flush()
+
+    def flush(self):
+        if not self.buffer and self.overwrite_initialized:
+            return
+        logger.info("Flushing {} rows to Google Sheets in overwrite mode".format(len(self.buffer)))
+        worksheet = self.get_or_load_worksheet()
+        num_lines = self.rows_written + len(self.buffer)
+        worksheet.resize(rows=max(1, num_lines), cols=self.num_columns)
+        if self.buffer:
+            cell_range = '%s:%s' % (
+                rowcol_to_a1(self.rows_written + 1, 1),
+                rowcol_to_a1(num_lines, self.num_columns)
+            )
+            worksheet.update(cell_range, self.buffer, value_input_option=self.parent.write_format)
+        else:
+            worksheet.clear()
+        self.overwrite_initialized = True
+        self.rows_written += len(self.buffer)
+        self.buffer = []
