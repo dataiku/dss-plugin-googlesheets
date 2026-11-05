@@ -1,6 +1,9 @@
 import json
 import os.path
 import gspread
+from random import uniform
+from time import sleep
+from gspread.exceptions import APIError
 from oauth2client.service_account import ServiceAccountCredentials
 from oauth2client.client import AccessTokenCredentials
 from safe_logger import SafeLogger
@@ -31,6 +34,24 @@ def _get_service_account_credentials(input_credentials):
     return credentials
 
 
+class RetryingClient(gspread.Client):
+    def request(self, method, endpoint, *args, **kwargs):
+        max_retries = 7
+        for attempt in range(max_retries + 1):
+            try:
+                return super(RetryingClient, self).request(method, endpoint, *args, **kwargs)
+            except APIError as error:
+                status = error.response.status_code
+                # Only replay explicit quota rejections
+                if status != 429 or attempt == max_retries:
+                    raise
+                delay = min(2 ** attempt + uniform(0, 1), 64)
+                logger.warning("Retrying {} after HTTP {} (retry {}/{} in {:.2f}s)".format(
+                    method, status, attempt + 1, max_retries, delay
+                ))
+                sleep(delay)
+
+
 class GoogleSheetsSession():
     scope = [
         'https://www.googleapis.com/auth/spreadsheets'
@@ -40,7 +61,7 @@ class GoogleSheetsSession():
         self.client = None
         if credentials_type == "service-account":
             credentials = _get_service_account_credentials(credentials)
-            self.client = gspread.authorize(
+            self.client = RetryingClient(
                 ServiceAccountCredentials.from_json_keyfile_dict(
                     credentials,
                     self.scope
@@ -48,10 +69,11 @@ class GoogleSheetsSession():
             )
             self.email = credentials.get("client_email", "(email missing)")
         else:
-            self.client = gspread.authorize(
+            self.client = RetryingClient(
                 AccessTokenCredentials(credentials, "dss-googledrive-plugin/2.0")
             )
             self.email = "(email missing)"
+        self.client.login()
 
     def list_documents_by_title(self, document_title, folder_id=None):
         return self.client.list_spreadsheet_files(document_title, folder_id=folder_id)

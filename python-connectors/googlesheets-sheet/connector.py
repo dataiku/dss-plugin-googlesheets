@@ -184,7 +184,7 @@ class OverwriteDatasetWriter(MyCustomDatasetWriter):
         logger.info("Flushing {} rows to Google Sheets in overwrite mode".format(len(self.buffer)))
         worksheet = self.get_or_load_worksheet()
         num_lines = self.rows_written + len(self.buffer)
-        # Preserve existing rows and columns until the final output size is known.
+        # Resize only if the worksheet is too small.
         if num_lines > worksheet.row_count or self.num_columns > worksheet.col_count:
             worksheet.resize(
                 rows=max(worksheet.row_count, num_lines),
