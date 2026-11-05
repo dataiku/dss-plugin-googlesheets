@@ -107,13 +107,11 @@ class MyConnector(Connector):
             raise Exception('Only one target sheet can be selected for writing')
 
         if write_mode == "APPEND":
-            writer_class = AppendDatasetWriter
+            return AppendDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id)
         elif write_mode == "OVERWRITE":
-            writer_class = OverwriteDatasetWriter
+            return OverwriteDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id)
         else:
             raise ValueError("Unsupported write mode: {}".format(write_mode))
-
-        return writer_class(self.config, self, dataset_schema, dataset_partitioning, partition_id)
 
     def get_records_count(self, partitioning=None, partition_id=None):
         """
