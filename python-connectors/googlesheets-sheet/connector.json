@@ -111,7 +111,7 @@
         },
         {
             "name": "batch_size",
-            "label": "Batch size",
+            "label": "Batch size (write mode)",
             "description": "Number of rows written per request. Larger batches reduce API calls but require more memory, especially for sheets with many columns.",
             "type": "INT",
             "visibilityCondition": "model.show_advanced_parameters==true",
