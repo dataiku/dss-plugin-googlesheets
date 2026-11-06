@@ -1,7 +1,7 @@
 from dataiku.connector import Connector, CustomDatasetWriter
 import json
 from collections import OrderedDict
-from gspread.utils import rowcol_to_a1
+from gspread.utils import a1_to_rowcol, rowcol_to_a1
 from slugify import slugify
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
@@ -106,7 +106,12 @@ class MyConnector(Connector):
         if len(self.tabs_ids) > 1:
             raise Exception('Only one target sheet can be selected for writing')
 
-        return MyCustomDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id, write_mode)
+        if write_mode == "APPEND":
+            return AppendDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id)
+        elif write_mode == "OVERWRITE":
+            return OverwriteDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id)
+        else:
+            raise ValueError("Unsupported write mode: {}".format(write_mode))
 
     def get_records_count(self, partitioning=None, partition_id=None):
         """
@@ -118,45 +123,125 @@ class MyConnector(Connector):
 
 
 class MyCustomDatasetWriter(CustomDatasetWriter):
-    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id, write_mode):
+    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id):
         CustomDatasetWriter.__init__(self)
         self.parent = parent
         self.config = config
         self.dataset_schema = dataset_schema
+        self.num_columns = max(1, len(dataset_schema["columns"]))
         self.dataset_partitioning = dataset_partitioning
         self.partition_id = partition_id
-        self.write_mode = write_mode
+        self.batch_size = config.get("batch_size", 200)
+        if self.batch_size < 1:
+            raise ValueError("Batch size must be at least 1")
+        self.worksheet = None
         self.buffer = []
         self.date_columns = []
         if self.parent.write_format == "USER_ENTERED":
             self.date_columns = mark_date_columns(dataset_schema)
             logger.info("Columns #{} are marked for date conversion".format(self.date_columns))
-        columns = [column["name"] for column in dataset_schema["columns"]]
-        if parent.result_format == 'first-row-header':
-            self.buffer.append(columns)
 
     def write_row(self, row):
         if self.date_columns:
             row = convert_dates_in_row(row, self.date_columns)
         self.buffer.append(row)
+        if len(self.buffer) >= self.batch_size:
+            self.flush()
+
+    def get_or_load_worksheet(self):
+        """Load the worksheet on first use and reuse it for subsequent batches."""
+        if self.worksheet is None:
+            self.worksheet = self.parent.session.get_spreadsheet(self.parent.doc_id, self.parent.tabs_ids[0])
+        return self.worksheet
 
     def flush(self):
-        worksheet = self.parent.session.get_spreadsheet(self.parent.doc_id, self.parent.tabs_ids[0])
-        worksheet.append_rows = append_rows.__get__(worksheet, worksheet.__class__)
-
-        if self.write_mode == "APPEND":
-            worksheet.append_rows(self.buffer[1:], self.parent.write_format) #TODO: batch ?
-        elif self.write_mode == "OVERWRITE":
-            num_columns = len(self.buffer[0])
-            num_lines = len(self.buffer)
-
-            worksheet.resize(rows=num_lines, cols=num_columns)
-
-            range = 'A1:%s' % rowcol_to_a1(num_lines, num_columns)
-            worksheet.update(range, self.buffer, value_input_option=self.parent.write_format)
-
-        self.buffer = []
+        raise NotImplementedError("Subclasses must implement flush")
 
     def close(self):
         self.flush()
-        pass
+
+
+class AppendDatasetWriter(MyCustomDatasetWriter):
+    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id):
+        MyCustomDatasetWriter.__init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id)
+        self.next_row = None
+        self.start_column = None
+        self.end_column = None
+
+    def extract_append_position_from_table_range(self, table_range):
+        """Return the one-based row and column immediately after the existing table.
+
+        tableRange describes the table before the append in A1 notation:
+        <sheet name>!<top-left cell>:<bottom-right cell>.
+        For example, "'Sheet 1'!B3:D10" gives (11, 2): row 11, column B.
+        An empty table range gives (1, 1).
+        """
+        if not table_range:
+            return 1, 1
+        table_cells = table_range.rsplit('!', 1)[-1].split(':')
+        start_row = a1_to_rowcol(table_cells[-1])[0] + 1
+        start_column = a1_to_rowcol(table_cells[0])[1]
+        return start_row, start_column
+
+    def flush(self):
+        if not self.buffer:
+            return
+        logger.info("Flushing {} rows to Google Sheets in append mode".format(len(self.buffer)))
+        # Repeated append_rows calls would overwrite trailing empty rows from the previous batch.
+        # Use append_rows only for the first batch. Its response's tableRange describes
+        # the table before the append, so we extract that batch's starting position
+        # and add the buffer length to find where the next batch should begin.
+        # Write subsequent batches at explicit positions to preserve empty rows.
+        worksheet = self.get_or_load_worksheet()
+        if self.next_row is None:
+            response = append_rows(worksheet, self.buffer, self.parent.write_format)
+            start_row, start_column = self.extract_append_position_from_table_range(response['tableRange'])
+            self.next_row = start_row + len(self.buffer)
+            self.start_column = start_column
+            self.end_column = start_column + self.num_columns - 1
+        else:
+            end_row = self.next_row + len(self.buffer) - 1
+            if end_row > worksheet.row_count or self.end_column > worksheet.col_count:
+                worksheet.resize(
+                    rows=max(worksheet.row_count, end_row),
+                    cols=max(worksheet.col_count, self.end_column)
+                )
+            cell_range = '%s:%s' % (
+                rowcol_to_a1(self.next_row, self.start_column),
+                rowcol_to_a1(end_row, self.end_column)
+            )
+            worksheet.update(cell_range, self.buffer, value_input_option=self.parent.write_format)
+            self.next_row = end_row + 1
+        self.buffer = []
+
+
+class OverwriteDatasetWriter(MyCustomDatasetWriter):
+    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id):
+        MyCustomDatasetWriter.__init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id)
+        self.worksheet_prepared = False
+        self.rows_written = 0
+        columns = [column["name"] for column in dataset_schema["columns"]]
+        if parent.result_format == 'first-row-header':
+            self.buffer.append(columns)
+            # The header fills the batch when batch size is set to 1.
+            if len(self.buffer) >= self.batch_size:
+                self.flush()
+
+    def flush(self):
+        worksheet = self.get_or_load_worksheet()
+        if not self.worksheet_prepared:
+            worksheet.clear()
+            self.worksheet_prepared = True
+        num_lines = self.rows_written + len(self.buffer)
+        # Resize both dimensions together so obsolete dimensions cannot inflate the grid.
+        if worksheet.row_count != max(1, num_lines) or worksheet.col_count != self.num_columns:
+            worksheet.resize(rows=max(1, num_lines), cols=self.num_columns)
+        if self.buffer:
+            logger.info("Flushing {} rows to Google Sheets in overwrite mode".format(len(self.buffer)))
+            cell_range = '%s:%s' % (
+                rowcol_to_a1(self.rows_written + 1, 1),
+                rowcol_to_a1(num_lines, self.num_columns)
+            )
+            worksheet.update(cell_range, self.buffer, value_input_option=self.parent.write_format)
+        self.rows_written = num_lines
+        self.buffer = []

@@ -110,6 +110,15 @@
             "visibilityCondition": "model.show_advanced_parameters==true"
         },
         {
+            "name": "batch_size",
+            "label": "Batch size (write mode)",
+            "description": "Number of rows written per request. Larger batches reduce API calls but require more memory, especially for sheets with many columns.",
+            "type": "INT",
+            "visibilityCondition": "model.show_advanced_parameters==true",
+            "defaultValue": 200,
+            "minI": 1
+        },
+        {
             "name": "write_format",
             "label": "Values interpretation (write mode)",
             "description": "In write mode, how data is interpreted by the spreadsheet",

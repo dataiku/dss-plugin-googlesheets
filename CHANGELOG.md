@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.4.2 - Enhancement and bugfix release - 2026-11-05
+
+- Add configurable batch size for custom dataset writes in append and overwrite modes, including Sync recipe outputs (default: 200 rows).
+- Fix the first data row being skipped when appending to a custom dataset without headers.
+
 ## [Version 1.4.1](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.4.1) - Bugfix - 2026-09-25
 
 - Fix security issue when parsing the access token on scenario's trigger
