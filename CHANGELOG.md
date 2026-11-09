@@ -1,5 +1,9 @@
 # Changelog
 
+## [Version 1.5.0](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.5.0) - Feature - 2026-11-09
+
+- Added Cobuild support to the Google Sheets plugi datasets and recipe
+
 ## [Version 1.4.1](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.4.1) - Bugfix - 2026-09-25
 
 - Fix security issue when parsing the access token on scenario's trigger
