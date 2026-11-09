@@ -67,6 +67,11 @@ def get_tab_ids(config):
     return tabs_ids
 
 
+def get_range_start_cell(a1_range):
+    """Return the top-left cell, e.g. B3 from 'Sheet 1'!B3:D10."""
+    return a1_range.rsplit('!', 1)[-1].split(':')[0]
+
+
 def get_unique_slugs(list_of_names):
     from slugify import slugify
     list_unique_slugs = []

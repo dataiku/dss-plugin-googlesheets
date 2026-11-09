@@ -1,6 +1,6 @@
 # Make available a method of later version of gspread (probably 3.4.0)
 # from https://github.com/burnash/gspread/pull/556
-def append_rows(self, values, value_input_option='RAW'):
+def append_rows(self, values, value_input_option='RAW', table_range=None):
     """Adds multiple rows to the worksheet and populates them with values.
     Widens the worksheet if there are more values than columns.
     :param values: List of rows each row is List of values for the new row.
@@ -8,6 +8,8 @@ def append_rows(self, values, value_input_option='RAW'):
                                 be interpreted. See `ValueInputOption`_ in
                                 the Sheets API.
     :type value_input_option: str
+    :param table_range: (optional) The A1 notation of a range to search for a logical table of data. Values are appended after the last row of the table.
+    :type table_range: str
     .. _ValueInputOption: https://developers.google.com/sheets/api/reference/rest/v4/ValueInputOption
     """
     params = {
@@ -18,4 +20,7 @@ def append_rows(self, values, value_input_option='RAW'):
         'values': values
     }
 
-    return self.spreadsheet.values_append(self.title, params, body)
+    range_name = self.title
+    if table_range is not None:
+        range_name = "'{}'!{}".format(self.title.replace("'", "''"), table_range)
+    return self.spreadsheet.values_append(range_name, params, body)
