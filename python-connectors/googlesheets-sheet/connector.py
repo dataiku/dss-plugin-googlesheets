@@ -135,6 +135,8 @@ class MyCustomDatasetWriter(CustomDatasetWriter):
         if self.batch_size < 1:
             raise ValueError("Batch size must be at least 1")
         self.worksheet = None
+        self.grid_rows = None
+        self.grid_columns = None
         self.buffer = []
         self.date_columns = []
         if self.parent.write_format == "USER_ENTERED":
@@ -152,7 +154,20 @@ class MyCustomDatasetWriter(CustomDatasetWriter):
         """Load the worksheet on first use and reuse it for subsequent batches."""
         if self.worksheet is None:
             self.worksheet = self.parent.session.get_spreadsheet(self.parent.doc_id, self.parent.tabs_ids[0])
+            self.grid_rows = self.worksheet.row_count
+            self.grid_columns = self.worksheet.col_count
         return self.worksheet
+
+    def resize_if_needed(self, rows, cols):
+        worksheet = self.get_or_load_worksheet()
+        # gspread 3.3.1 does not refresh its cached dimensions after resize().
+        if self.grid_rows != rows or self.grid_columns != cols:
+            worksheet.resize(rows=rows, cols=cols)
+            self.grid_rows = rows
+            self.grid_columns = cols
+
+    def clear_worksheet(self):
+        self.get_or_load_worksheet().clear()
 
     def flush(self):
         raise NotImplementedError("Subclasses must implement flush")
@@ -171,7 +186,7 @@ class AppendDatasetWriter(MyCustomDatasetWriter):
     def extract_append_position_from_table_range(self, table_range):
         """Return the one-based row and column immediately after the existing table.
 
-        tableRange describes the table before the append in A1 notation:
+        tableRange is written in A1 notation:
         <sheet name>!<top-left cell>:<bottom-right cell>.
         For example, "'Sheet 1'!B3:D10" gives (11, 2): row 11, column B.
         An empty table range gives (1, 1).
@@ -188,24 +203,25 @@ class AppendDatasetWriter(MyCustomDatasetWriter):
             return
         logger.info("Flushing {} rows to Google Sheets in append mode".format(len(self.buffer)))
         # Repeated append_rows calls would overwrite trailing empty rows from the previous batch.
-        # Use append_rows only for the first batch. Its response's tableRange describes
-        # the table before the append, so we extract that batch's starting position
+        # Instead we use append_rows only for the first batch. Its response's contains a tableRange
+        # that describes the table before the append operation. We can then extract that batch's starting position
         # and add the buffer length to find where the next batch should begin.
         # Write subsequent batches at explicit positions to preserve empty rows.
         worksheet = self.get_or_load_worksheet()
         if self.next_row is None:
             response = append_rows(worksheet, self.buffer, self.parent.write_format)
-            start_row, start_column = self.extract_append_position_from_table_range(response['tableRange'])
+            start_row, start_column = self.extract_append_position_from_table_range(response.get('tableRange', ''))
             self.next_row = start_row + len(self.buffer)
             self.start_column = start_column
             self.end_column = start_column + self.num_columns - 1
+            self.grid_rows = max(self.grid_rows, self.next_row - 1)
+            self.grid_columns = max(self.grid_columns, self.end_column)
         else:
             end_row = self.next_row + len(self.buffer) - 1
-            if end_row > worksheet.row_count or self.end_column > worksheet.col_count:
-                worksheet.resize(
-                    rows=max(worksheet.row_count, end_row),
-                    cols=max(worksheet.col_count, self.end_column)
-                )
+            self.resize_if_needed(
+                rows=max(self.grid_rows, end_row),
+                cols=max(self.grid_columns, self.end_column)
+            )
             cell_range = '%s:%s' % (
                 rowcol_to_a1(self.next_row, self.start_column),
                 rowcol_to_a1(end_row, self.end_column)
@@ -230,12 +246,10 @@ class OverwriteDatasetWriter(MyCustomDatasetWriter):
     def flush(self):
         worksheet = self.get_or_load_worksheet()
         if not self.worksheet_prepared:
-            worksheet.clear()
+            self.clear_worksheet()
             self.worksheet_prepared = True
         num_lines = self.rows_written + len(self.buffer)
-        # Resize both dimensions together so obsolete dimensions cannot inflate the grid.
-        if worksheet.row_count != max(1, num_lines) or worksheet.col_count != self.num_columns:
-            worksheet.resize(rows=max(1, num_lines), cols=self.num_columns)
+        self.resize_if_needed(rows=max(1, num_lines), cols=self.num_columns)
         if self.buffer:
             logger.info("Flushing {} rows to Google Sheets in overwrite mode".format(len(self.buffer)))
             cell_range = '%s:%s' % (
