@@ -160,7 +160,6 @@ class MyCustomDatasetWriter(CustomDatasetWriter):
 
     def resize_if_needed(self, rows, cols):
         worksheet = self.get_or_load_worksheet()
-        # gspread 3.3.1 does not refresh its cached dimensions after resize().
         if self.grid_rows != rows or self.grid_columns != cols:
             worksheet.resize(rows=rows, cols=cols)
             self.grid_rows = rows
