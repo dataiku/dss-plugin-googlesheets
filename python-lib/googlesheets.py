@@ -61,19 +61,20 @@ class GoogleSheetsSession():
         self.client = None
         if credentials_type == "service-account":
             credentials = _get_service_account_credentials(credentials)
-            self.client = RetryingClient(
+            self.client = gspread.authorize(
                 ServiceAccountCredentials.from_json_keyfile_dict(
                     credentials,
                     self.scope
-                )
+                ),
+                client_class=RetryingClient
             )
             self.email = credentials.get("client_email", "(email missing)")
         else:
-            self.client = RetryingClient(
-                AccessTokenCredentials(credentials, "dss-googledrive-plugin/2.0")
+            self.client = gspread.authorize(
+                AccessTokenCredentials(credentials, "dss-googledrive-plugin/2.0"),
+                client_class=RetryingClient
             )
             self.email = "(email missing)"
-        self.client.login()
 
     def list_documents_by_title(self, document_title, folder_id=None):
         return self.client.list_spreadsheet_files(document_title, folder_id=folder_id)
