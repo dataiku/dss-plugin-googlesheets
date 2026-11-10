@@ -67,6 +67,14 @@ def get_tab_ids(config):
     return tabs_ids
 
 
+def escape_sheet_title(sheet_title):
+    """Quote a sheet title to handle special characters in A1 notation, doubling embedded apostrophes.
+
+    For example, Bob's sheet becomes 'Bob''s sheet'.
+    """
+    return "'{}'".format(sheet_title.replace("'", "''"))
+
+
 def get_range_start_cell(a1_range):
     """Return the top-left cell, e.g. B3 from 'Sheet 1'!B3:D10."""
     return a1_range.rsplit('!', 1)[-1].split(':')[0]

@@ -1,10 +1,12 @@
+from googlesheets_common import escape_sheet_title
+
+
 def format_sheet_range(sheet_title, cell_range):
     """Build an A1 range notation from a sheet title and a cell range. Always escapes sheet names with single quotes to deal with special characters.
 
     For example, Bob's sheet and A1:B2 become 'Bob''s sheet'!A1:B2.
     """
-    escaped_title = sheet_title.replace("'", "''")
-    return "'{}'!{}".format(escaped_title, cell_range)
+    return "{}!{}".format(escape_sheet_title(sheet_title), cell_range)
 
 
 # Make available a method of later version of gspread (probably 3.4.0)
@@ -29,7 +31,8 @@ def append_rows(self, values, value_input_option='RAW', table_range=None):
         'values': values
     }
 
-    range_name = self.title
     if table_range is not None:
         range_name = format_sheet_range(self.title, table_range)
+    else:
+        range_name = escape_sheet_title(self.title)
     return self.spreadsheet.values_append(range_name, params, body)

@@ -6,7 +6,7 @@ from slugify import slugify
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
 from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids, mark_date_columns, convert_dates_in_row, \
-    get_range_start_cell
+    get_range_start_cell, escape_sheet_title
 from googlesheets_append import append_rows
 
 logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
@@ -156,7 +156,8 @@ class BatchedDatasetWriter(CustomDatasetWriter):
         return self.worksheet
 
     def clear_worksheet(self):
-        self.get_or_load_worksheet().clear()
+        worksheet = self.get_or_load_worksheet()
+        worksheet.spreadsheet.values_clear(escape_sheet_title(worksheet.title))
 
     def close(self):
         self.flush()
