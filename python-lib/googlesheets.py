@@ -35,19 +35,23 @@ def _get_service_account_credentials(input_credentials):
 
 
 class RetryingClient(gspread.Client):
+    """Google Sheets client that retries requests after HTTP 429 (Too Many Requests) responses indicating rate limiting."""
+
+    # Max number of times the client retries after receiving HTTP 429.
+    MAX_RETRIES = 7
+
     def request(self, method, endpoint, *args, **kwargs):
-        max_retries = 7
-        for attempt in range(max_retries + 1):
+        for attempt in range(self.MAX_RETRIES + 1):
             try:
                 return super(RetryingClient, self).request(method, endpoint, *args, **kwargs)
             except APIError as error:
                 status = error.response.status_code
                 # Only replay explicit quota rejections
-                if status != 429 or attempt == max_retries:
+                if status != 429 or attempt == self.MAX_RETRIES:
                     raise
                 delay = min(2 ** attempt + uniform(0, 1), 64)
                 logger.warning("Retrying {} after HTTP {} (retry {}/{} in {:.2f}s)".format(
-                    method, status, attempt + 1, max_retries, delay
+                    method, status, attempt + 1, self.MAX_RETRIES, delay
                 ))
                 sleep(delay)
 
