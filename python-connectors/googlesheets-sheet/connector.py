@@ -5,9 +5,9 @@ from gspread.utils import a1_to_rowcol, rowcol_to_a1
 from slugify import slugify
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
-from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids, mark_date_columns, convert_dates_in_row, get_range_start_cell
+from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids, mark_date_columns, convert_dates_in_row, \
+    get_range_start_cell
 from googlesheets_append import append_rows
-
 
 logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
 
@@ -16,7 +16,8 @@ class MyConnector(Connector):
 
     def __init__(self, config):
         Connector.__init__(self, config)  # pass the parameters to the base class
-        logger.info("GoogleSheets connector v{} starting with {}".format(DSSConstants.PLUGIN_VERSION, logger.filter_secrets(config)))
+        logger.info("GoogleSheets connector v{} starting with {}".format(DSSConstants.PLUGIN_VERSION,
+                                                                         logger.filter_secrets(config)))
         credentials, credentials_type = extract_credentials(config)
         self.session = GoogleSheetsSession(credentials, credentials_type)
         self.doc_id = self.config.get("doc_id")
@@ -198,3 +199,10 @@ class OverwriteDatasetWriter(BatchedDatasetWriter):
             self.clear_worksheet()
             self.worksheet_prepared = True
         BatchedDatasetWriter.flush(self)
+
+    def close(self):
+        self.flush()
+        worksheet = self.get_or_load_worksheet()
+        final_row_num = max(1, self.next_row - 1)
+        final_col_num = max(1, len(self.dataset_schema["columns"]))
+        worksheet.resize(rows=final_row_num, cols=final_col_num)
