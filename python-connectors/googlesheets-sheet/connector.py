@@ -135,7 +135,7 @@ class BatchedDatasetWriter(CustomDatasetWriter):
         if self.batch_size < 1:
             raise ValueError("Batch size must be at least 1")
         self.worksheet = None
-        self.next_cell = None # Tracks the cell address where the next batch starts.
+        self.next_cell = None  # 1-based (row, column) tuple used to track where the next batch starts.
         self.buffer = []
         self.date_columns = []
         if self.parent.write_format == "USER_ENTERED":
