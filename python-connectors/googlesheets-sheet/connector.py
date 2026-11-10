@@ -135,9 +135,7 @@ class BatchedDatasetWriter(CustomDatasetWriter):
         if self.batch_size < 1:
             raise ValueError("Batch size must be at least 1")
         self.worksheet = None
-        # next_row and start_column keep tracks of the position to write next batch
-        self.next_row = None
-        self.start_column = None
+        self.next_cell = None # Tracks the cell address where the next batch starts.
         self.buffer = []
         self.date_columns = []
         if self.parent.write_format == "USER_ENTERED":
@@ -169,15 +167,14 @@ class BatchedDatasetWriter(CustomDatasetWriter):
         logger.info("Flushing {} rows to Google Sheets".format(len(self.buffer)))
         worksheet = self.get_or_load_worksheet()
         table_range = None
-        if self.next_row is not None:
-            table_range = rowcol_to_a1(self.next_row, self.start_column)
+        if self.next_cell is not None:
+            table_range = rowcol_to_a1(*self.next_cell)
         # here we use append_rows with table_range parameter because otherwise, google sheets would write to the first populated row, omitting previous batch empty rows.
         response = append_rows(worksheet, self.buffer, self.parent.write_format, table_range=table_range)
         updated_range = response['updates']['updatedRange']
         # updated_range may omit empty rows, so we don't read start_row and start_column from the ending cell but from the starting cell with adding buffer length to it.
         start_row, start_column = a1_to_rowcol(get_range_start_cell(updated_range))
-        self.next_row = start_row + len(self.buffer)
-        self.start_column = start_column
+        self.next_cell = (start_row + len(self.buffer), start_column)
         self.buffer = []
 
 
@@ -185,8 +182,7 @@ class OverwriteDatasetWriter(BatchedDatasetWriter):
     def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id):
         BatchedDatasetWriter.__init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id)
         self.worksheet_prepared = False
-        self.next_row = 1
-        self.start_column = 1
+        self.next_cell = (1, 1)
         columns = [column["name"] for column in dataset_schema["columns"]]
         if parent.result_format == 'first-row-header':
             self.buffer.append(columns)
@@ -203,6 +199,6 @@ class OverwriteDatasetWriter(BatchedDatasetWriter):
     def close(self):
         self.flush()
         worksheet = self.get_or_load_worksheet()
-        final_row_num = max(1, self.next_row - 1)
+        final_row_num = max(1, self.next_cell[0] - 1)
         final_col_num = max(1, len(self.dataset_schema["columns"]))
         worksheet.resize(rows=final_row_num, cols=final_col_num)
