@@ -1,6 +1,9 @@
 import json
 import os.path
 import gspread
+from random import uniform
+from time import sleep
+from gspread.exceptions import APIError
 from oauth2client.service_account import ServiceAccountCredentials
 from oauth2client.client import AccessTokenCredentials
 from safe_logger import SafeLogger
@@ -31,6 +34,28 @@ def _get_service_account_credentials(input_credentials):
     return credentials
 
 
+class RetryingClient(gspread.Client):
+    """Google Sheets client that retries requests after HTTP 429 (Too Many Requests) responses indicating rate limiting."""
+
+    # Max number of times the client retries after receiving HTTP 429.
+    MAX_RETRIES = 7
+
+    def request(self, method, endpoint, *args, **kwargs):
+        for attempt in range(self.MAX_RETRIES + 1):
+            try:
+                return super(RetryingClient, self).request(method, endpoint, *args, **kwargs)
+            except APIError as error:
+                status = error.response.status_code
+                # Only replay explicit quota rejections
+                if status != 429 or attempt == self.MAX_RETRIES:
+                    raise
+                delay = min(2 ** attempt + uniform(0, 1), 64)
+                logger.warning("Retrying {} after HTTP {} (retry {}/{} in {:.2f}s)".format(
+                    method, status, attempt + 1, self.MAX_RETRIES, delay
+                ))
+                sleep(delay)
+
+
 class GoogleSheetsSession():
     scope = [
         'https://www.googleapis.com/auth/spreadsheets'
@@ -44,12 +69,14 @@ class GoogleSheetsSession():
                 ServiceAccountCredentials.from_json_keyfile_dict(
                     credentials,
                     self.scope
-                )
+                ),
+                client_class=RetryingClient
             )
             self.email = credentials.get("client_email", "(email missing)")
         else:
             self.client = gspread.authorize(
-                AccessTokenCredentials(credentials, "dss-googledrive-plugin/2.0")
+                AccessTokenCredentials(credentials, "dss-googledrive-plugin/2.0"),
+                client_class=RetryingClient
             )
             self.email = "(email missing)"
 

@@ -9,7 +9,7 @@ class DSSConstants(object):
         "single-sign-on": "There is a problem with the selected Single Sign On preset"
     }
     DEFAULT_DATASET_FORMAT = {'separator': '\t', 'style': 'unix', 'compress': ''}
-    PLUGIN_VERSION = '1.4.1'
+    PLUGIN_VERSION = '1.4.2'
     DSS_DATE_FORMAT = "%Y-%m-%dT%H:%M:%S.%fZ"
     GSPREAD_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
@@ -65,6 +65,19 @@ def get_tab_ids(config):
         if legacy_tab_id:
             return [legacy_tab_id]
     return tabs_ids
+
+
+def escape_sheet_title(sheet_title):
+    """Quote a sheet title to handle special characters in A1 notation, doubling embedded apostrophes.
+
+    For example, Bob's sheet becomes 'Bob''s sheet'.
+    """
+    return "'{}'".format(sheet_title.replace("'", "''"))
+
+
+def get_range_start_cell(a1_range):
+    """Return the top-left cell, e.g. B3 from 'Sheet 1'!B3:D10."""
+    return a1_range.rsplit('!', 1)[-1].split(':')[0]
 
 
 def get_unique_slugs(list_of_names):
