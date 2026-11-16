@@ -1,13 +1,13 @@
 from dataiku.connector import Connector, CustomDatasetWriter
 import json
 from collections import OrderedDict
-from gspread.utils import rowcol_to_a1
+from gspread.utils import a1_to_rowcol, rowcol_to_a1
 from slugify import slugify
 from googlesheets import GoogleSheetsSession
 from safe_logger import SafeLogger
-from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids, mark_date_columns, convert_dates_in_row
+from googlesheets_common import DSSConstants, extract_credentials, get_tab_ids, mark_date_columns, convert_dates_in_row, \
+    get_range_start_cell, escape_sheet_title
 from googlesheets_append import append_rows
-
 
 logger = SafeLogger("googlesheets plugin", ["credentials", "access_token"])
 
@@ -16,7 +16,8 @@ class MyConnector(Connector):
 
     def __init__(self, config):
         Connector.__init__(self, config)  # pass the parameters to the base class
-        logger.info("GoogleSheets connector v{} starting with {}".format(DSSConstants.PLUGIN_VERSION, logger.filter_secrets(config)))
+        logger.info("GoogleSheets connector v{} starting with {}".format(DSSConstants.PLUGIN_VERSION,
+                                                                         logger.filter_secrets(config)))
         credentials, credentials_type = extract_credentials(config)
         self.session = GoogleSheetsSession(credentials, credentials_type)
         self.doc_id = self.config.get("doc_id")
@@ -106,7 +107,12 @@ class MyConnector(Connector):
         if len(self.tabs_ids) > 1:
             raise Exception('Only one target sheet can be selected for writing')
 
-        return MyCustomDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id, write_mode)
+        if write_mode == "APPEND":
+            return BatchedDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id)
+        elif write_mode == "OVERWRITE":
+            return OverwriteDatasetWriter(self.config, self, dataset_schema, dataset_partitioning, partition_id)
+        else:
+            raise ValueError("Unsupported write mode: {}".format(write_mode))
 
     def get_records_count(self, partitioning=None, partition_id=None):
         """
@@ -117,46 +123,83 @@ class MyConnector(Connector):
         raise NotImplementedError("Count records")
 
 
-class MyCustomDatasetWriter(CustomDatasetWriter):
-    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id, write_mode):
+class BatchedDatasetWriter(CustomDatasetWriter):
+    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id):
         CustomDatasetWriter.__init__(self)
         self.parent = parent
         self.config = config
         self.dataset_schema = dataset_schema
         self.dataset_partitioning = dataset_partitioning
         self.partition_id = partition_id
-        self.write_mode = write_mode
+        self.batch_size = config.get("batch_size", 200)
+        if self.batch_size < 1:
+            raise ValueError("Batch size must be at least 1")
+        self.worksheet = None
+        self.next_cell = None  # 1-based (row, column) tuple used to track where the next batch starts.
         self.buffer = []
         self.date_columns = []
         if self.parent.write_format == "USER_ENTERED":
             self.date_columns = mark_date_columns(dataset_schema)
             logger.info("Columns #{} are marked for date conversion".format(self.date_columns))
-        columns = [column["name"] for column in dataset_schema["columns"]]
-        if parent.result_format == 'first-row-header':
-            self.buffer.append(columns)
 
     def write_row(self, row):
         if self.date_columns:
             row = convert_dates_in_row(row, self.date_columns)
         self.buffer.append(row)
+        if len(self.buffer) >= self.batch_size:
+            self.flush()
 
-    def flush(self):
-        worksheet = self.parent.session.get_spreadsheet(self.parent.doc_id, self.parent.tabs_ids[0])
-        worksheet.append_rows = append_rows.__get__(worksheet, worksheet.__class__)
+    def get_or_load_worksheet(self):
+        """Load the worksheet on first use and reuse it for subsequent batches."""
+        if self.worksheet is None:
+            self.worksheet = self.parent.session.get_spreadsheet(self.parent.doc_id, self.parent.tabs_ids[0])
+        return self.worksheet
 
-        if self.write_mode == "APPEND":
-            worksheet.append_rows(self.buffer[1:], self.parent.write_format) #TODO: batch ?
-        elif self.write_mode == "OVERWRITE":
-            num_columns = len(self.buffer[0])
-            num_lines = len(self.buffer)
-
-            worksheet.resize(rows=num_lines, cols=num_columns)
-
-            range = 'A1:%s' % rowcol_to_a1(num_lines, num_columns)
-            worksheet.update(range, self.buffer, value_input_option=self.parent.write_format)
-
-        self.buffer = []
+    def clear_worksheet(self):
+        worksheet = self.get_or_load_worksheet()
+        worksheet.spreadsheet.values_clear(escape_sheet_title(worksheet.title))
 
     def close(self):
         self.flush()
-        pass
+
+    def flush(self):
+        if not self.buffer:
+            return
+        logger.info("Flushing {} rows to Google Sheets".format(len(self.buffer)))
+        worksheet = self.get_or_load_worksheet()
+        table_range = None
+        if self.next_cell is not None:
+            table_range = rowcol_to_a1(*self.next_cell)
+        # here we use append_rows with table_range parameter because otherwise, google sheets would write to the first populated row, omitting previous batch empty rows.
+        response = append_rows(worksheet, self.buffer, self.parent.write_format, table_range=table_range)
+        updated_range = response['updates']['updatedRange']
+        # updated_range may omit empty rows, so we don't read start_row and start_column from the ending cell but from the starting cell with adding buffer length to it.
+        start_row, start_column = a1_to_rowcol(get_range_start_cell(updated_range))
+        self.next_cell = (start_row + len(self.buffer), start_column)
+        self.buffer = []
+
+
+class OverwriteDatasetWriter(BatchedDatasetWriter):
+    def __init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id):
+        BatchedDatasetWriter.__init__(self, config, parent, dataset_schema, dataset_partitioning, partition_id)
+        self.worksheet_prepared = False
+        self.next_cell = (1, 1)
+        columns = [column["name"] for column in dataset_schema["columns"]]
+        if parent.result_format == 'first-row-header':
+            self.buffer.append(columns)
+            # The header fills the batch when batch size is set to 1.
+            if len(self.buffer) >= self.batch_size:
+                self.flush()
+
+    def flush(self):
+        if not self.worksheet_prepared:
+            self.clear_worksheet()
+            self.worksheet_prepared = True
+        BatchedDatasetWriter.flush(self)
+
+    def close(self):
+        self.flush()
+        worksheet = self.get_or_load_worksheet()
+        final_row_num = max(1, self.next_cell[0] - 1)
+        final_col_num = max(1, len(self.dataset_schema["columns"]))
+        worksheet.resize(rows=final_row_num, cols=final_col_num)
