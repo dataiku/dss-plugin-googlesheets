@@ -2,7 +2,7 @@
 
 ## [Version 1.5.0](https://github.com/dataiku/dss-plugin-googlesheets/releases/tag/v1.5.0) - Feature - 2026-11-09
 
-- Added Cobuild support to the Google Sheets plugi datasets and recipe
+- Added Cobuild support to the Google Sheets plugin dataset and recipes
 
 ## Version 1.4.2 - Enhancement and bugfix release - 2026-11-05
 
