@@ -1,0 +1,11 @@
+- Use this recipe to append or overwrite rows from an existing DSS dataset in one Google Sheets tab. It also writes a copy of the exported rows to a separate DSS output dataset.
+- Bind the source dataset to `input_role` and a writable DSS dataset to `output_role`. The output receives a copy of the exported rows and is required at runtime, even though the descriptor marks it optional.
+- Before creating the recipe, ask which DSS dataset should receive that copy unless the user already specified one. Use an existing ordinary writable dataset or create a new managed dataset first, according to their choice. Configure the Google Sheets destination separately; do not bind the target Google Sheets dataset to `output_role`.
+- For `auth_type="single-sign-on"`, select an accessible `oauth_credentials` preset from the `single-sign-on` parameter set. For `auth_type="preset-service-account"`, select `preset_credentials_service_account` from the `service-account` parameter set.
+- The authenticated account needs edit access to the spreadsheet; share it with the service-account email when using a service account. If authentication setup is incomplete, ask the user to finish it in DSS. Configure legacy `credentials` in DSS settings rather than requesting private keys in the conversation.
+- Set `doc_id` to the spreadsheet ID between `/d/` and `/edit` in its Google Sheets URL.
+- Set `tabs_ids` to one exact tab name as a string, such as `"Sales"`, rather than a list or numeric `gid`. For manual selection, set `tabs_ids="__dku_manual_select"` and `tab_id` to the exact tab name.
+- If the target tab is unknown, ask for its name or have the user select it in DSS settings; do not invent a default tab. A missing tab can be created during execution.
+- `write_mode="append"` adds rows without adding headers. `write_mode="overwrite"` clears the tab and writes input column names followed by the rows.
+- For a confirmed new tab, use `write_mode="overwrite"` to include headers unless the user explicitly requests append. For an existing tab, clarify ambiguous write intent before overwriting; adding headers alone does not justify clearing existing data.
+- `insert_format="RAW"` stores values as supplied; `insert_format="USER_ENTERED"` lets Google Sheets interpret numbers, dates, and formulas.
