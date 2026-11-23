@@ -3,7 +3,9 @@
         "label" : "Google Sheets document",
         "description" : "A simple read/write connector for a Google Sheets document"
     },
-
+    "cobuild": {
+        "supported": true
+    },
     "readable" : true,
     "writable" : true,
     "canCountRecords" : false,
